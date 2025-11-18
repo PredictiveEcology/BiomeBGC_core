@@ -8,7 +8,7 @@ defineModule(sim, list(
   name = "BiomeBGC_core",
   description = "",
   keywords = "",
-  authors = structure(list(list(given = c("First", "Middle"), family = "Last", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
+  authors = structure(list(list(given = "Dominique", family = "Caron", role = c("aut", "cre"), email = "dominique.caron@nrcan-rncan.gc.ca", comment = NULL)), class = "person"),
   childModules = character(0),
   version = list(BiomeBGC_core = "0.0.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
@@ -43,19 +43,19 @@ defineModule(sim, list(
       objectName = "bbgc.co2",
       objectClass = "character",
       desc = paste("Biome-BGC carbon-dioxide concentration files.", 
-                   "Path to the .txt files (one path per site/scenario).")
+                   "Path to the .txt files.")
     ),
     expectsInput(
       objectName = "bbgcSpinup.ini",
       objectClass = "character",
-      desc = paste("Biome-BGC ecophysiological constants files.", 
-                   "Path to the .epc files (one path per site/scenario).")
+      desc = paste("Biome-BGC initialization files for the spinup.", 
+                   "Path to the .ini files (one path per site/scenario).")
     ),
     expectsInput(
       objectName = "bbgc.epc",
       objectClass = "character",
       desc = paste("Biome-BGC ecophysiological constants files.", 
-                   "Path to the .epc files (one path per site/scenario).")
+                   "Path to the .epc files.")
     ),
     expectsInput(
       objectName = "bbgc.ini",
@@ -67,12 +67,6 @@ defineModule(sim, list(
       objectName = "bbgc.met",
       objectClass = "character",
       desc = paste("Biome-BGC meterological data files.", 
-                   "Path to the .met files (one path per site/scenario).")
-    ),
-    expectsInput(
-      objectName = "bbgc.restart",
-      objectClass = "character",
-      desc = paste("Biome-BGC restart files.", 
                    "Path to the .met files (one path per site/scenario).")
     )
   ),
