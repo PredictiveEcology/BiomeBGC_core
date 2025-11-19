@@ -192,22 +192,6 @@ extractInputFiles <- function(iniPaths){
   return(inputFilePaths)
 }
 
-readOutputControl <- function(res){
-  # Get the path to the annual abiotic variable output
-  outputControlFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), "_ann.txt")
-  # Set the column names - DC 2025-11-08: Is that fixed?
-  colNames <- c("year", "annPRCP", "annTavg", "maxLAI", "annET", "annOF", "annNPP", "annNBP")
-  # Read the file
-  outputControl <- read.table(
-    outputControlFile,
-    skip = 10, # DC 2025-11-08: Is that always true?
-    header = FALSE,
-    col.names = colNames
-  )
-  return(outputControl)
-  
-}
-
 readDailyOutput <- function(res){
   # Get columns names
   colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
