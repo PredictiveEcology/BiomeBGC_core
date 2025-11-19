@@ -6,9 +6,13 @@
 ## If exact location is required, functions will be: `sim$.mods$<moduleName>$FunctionName`.
 defineModule(sim, list(
   name = "BiomeBGC_core",
-  description = "",
+  description = "Runs Biome-BGC.",
   keywords = "",
-  authors = structure(list(list(given = "Dominique", family = "Caron", role = c("aut", "cre"), email = "dominique.caron@nrcan-rncan.gc.ca", comment = NULL)), class = "person"),
+  authors = c(
+    person("Dominique", "Caron", email = "dominique.caron@nrcan-rncan.gc.ca", role = c("aut", "cre")),
+    person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = "aut"),
+    person("Céline", "Boisvenue", email = "celine.boisvenue@nrcan-rncan.gc.ca", role = "ctb")
+  ),
   childModules = character(0),
   version = list(BiomeBGC_core = "0.0.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
