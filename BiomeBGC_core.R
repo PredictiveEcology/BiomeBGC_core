@@ -39,7 +39,7 @@ defineModule(sim, list(
                     "This describes the simulation time interval between save events."),
     defineParameter(".studyAreaName", "character", NA, NA, NA,
                     "Human-readable name for the study area used - e.g., a hash of the study",
-                          "area obtained using `reproducible::studyAreaName()`"),
+                    "area obtained using `reproducible::studyAreaName()`"),
     ## .seed is optional: `list('init' = 123)` will `set.seed(123)` for the `init` event only.
     defineParameter(".seed", "list", list(), NA, NA,
                     "Named list of seeds to use for each event (names)."),
@@ -73,10 +73,10 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
     init = {
       ### check for more detailed object dependencies:
       ### (use `checkObject` or similar)
-
+      
       # do stuff for this event
       sim <- Init(sim)
-
+      
       # schedule future event(s)
       sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "BiomeBGC_core", "plot")
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "BiomeBGC_core", "save")
@@ -84,26 +84,26 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
     plot = {
       # ! ----- EDIT BELOW ----- ! #
       # do stuff for this event
-
+      
       # schedule future event(s)
-
+      
       # e.g.,
       #sim <- scheduleEvent(sim, time(sim) + P(sim)$.plotInterval, "BiomeBGC_core", "plot")
-
+      
       # ! ----- STOP EDITING ----- ! #
     },
     save = {
       # ! ----- EDIT BELOW ----- ! #
       # do stuff for this event
-
+      
       # e.g., call your custom functions/methods here
       # you can define your own methods below this `doEvent` function
-
+      
       # schedule future event(s)
-
+      
       # e.g.,
       # sim <- scheduleEvent(sim, time(sim) + P(sim)$.saveInterval, "BiomeBGC_core", "save")
-
+      
       # ! ----- STOP EDITING ----- ! #
     },
     warning(noEventWarning(sim))
@@ -115,7 +115,6 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 Init <- function(sim) {
   ## Arguments for the BiomeBGC library
   argv <- params(sim)$BiomeBGC_core$argv
-  
   ## Set the simulation directory
   bbgcPath <- params(sim)$BiomeBGC_core$bbgcPath
   createBGCdirs(sim)
@@ -271,9 +270,9 @@ readAnnualOutput <- function(res){
   #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
-
+  
   # ! ----- EDIT BELOW ----- ! #
-
+  
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
