@@ -152,11 +152,11 @@ Init <- function(sim) {
   })
   ## Output processing
   sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-  sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))
+  sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
   sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-  sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))
+  sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
   sim$annualOutput <- lapply(res, readAnnualOutput) |> rbindlist(idcol = "pixelGroup")
-  sim$annualOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))
+  sim$annualOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualOutput$pixelGroup]
   
   return(invisible(sim))
 }
