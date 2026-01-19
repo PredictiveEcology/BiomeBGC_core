@@ -19,7 +19,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
-  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development"),
+  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel"),
   parameters = bindrows(
     defineParameter("argv", "character", "-a", NA, NA,
                     "Arguments for the BiomeBGC library (same as 'bgc' commandline application)"),
@@ -27,6 +27,8 @@ defineModule(sim, list(
                     "Path to base directory to use for simulations."),
     defineParameter("bbgcInputPath", "character", inputPath(sim), NA, NA,
                     "Path to the Biome-BGC input directory."),
+    defineParameter("parallel.cores", "integer", 1L, 1L, NA,
+                    "Number of cores used to execute the simulation"),
     defineParameter(".plots", "character", "screen", NA, NA,
                     "Used by Plots function, which can be optionally used here"),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
@@ -125,15 +127,29 @@ Init <- function(sim) {
     "ini",
     paste0(sim$pixelGroupParameters$pixelGroup, "_spinup.ini")
   )
-  res <- lapply(spinupIniPaths, function(iniPath) {
-    message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
-    # Run spinup and silence the messaging
-    log <- capture.output({
-      resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+  if(params(sim)$BiomeBGC_core$parallel.cores > 1){
+    cl <- makePSOCKcluster(params(sim)$BiomeBGC_core$parallel.cores)
+    clusterEvalQ(cl, library(BiomeBGCR))
+    res <- parLapply(cl, spinupIniPaths, function(iniPath) {
+      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
+      # Run spinup and silence the messaging
+      log <- capture.output({
+        resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+      })
+      if (resi[[1]] != 0) stop("Spinup error.")
+      return(resi[[2]][[1]])
     })
-    if (resi[[1]] != 0) stop("Spinup error.")
-    return(resi[[2]][[1]])
-  })
+  } else {
+    res <- lapply(spinupIniPaths, function(iniPath) {
+      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
+      # Run spinup and silence the messaging
+      log <- capture.output({
+        resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+      })
+      if (resi[[1]] != 0) stop("Spinup error.")
+      return(resi[[2]][[1]])
+    })
+  }
   
   ## Simulate
   # execute the simulations
@@ -141,20 +157,34 @@ Init <- function(sim) {
                         "inputs" ,
                         "ini",
                         paste0(sim$pixelGroupParameters$pixelGroup, ".ini"))
-  res <- lapply(iniPaths, function(iniPath) {
-    message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
-    # Run simulation and silence the messaging
-    log <- capture.output({
-      resi <- bgcExecute(argv, iniPath, bbgcPath)
+  if(params(sim)$BiomeBGC_core$parallel.cores > 1){
+    res <-  parLapply(cl, iniPaths, function(iniPath) {
+      message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
+      # Run simulation and silence the messaging
+      log <- capture.output({
+        resi <- bgcExecute(argv, iniPath, bbgcPath)
+      })
+      if (resi[[1]] != 0) stop("Simulation error.")
+      return(resi[[2]][[1]])
     })
-    if (resi[[1]] != 0) stop("Simulation error.")
-    return(resi[[2]][[1]])
-  })
+    stopCluster(cl)
+  } else {
+    res <- lapply(iniPaths, function(iniPath) {
+      message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
+      # Run simulation and silence the messaging
+      log <- capture.output({
+        resi <- bgcExecute(argv, iniPath, bbgcPath)
+      })
+      if (resi[[1]] != 0) stop("Simulation error.")
+      return(resi[[2]][[1]])
+    })
+  }
+  
   ## Output processing
-  sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-  sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
-  sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-  sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+  # sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+  # sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+  # sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+  # sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
   sim$annualOutput <- lapply(res, readAnnualOutput) |> rbindlist(idcol = "pixelGroup")
   sim$annualOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualOutput$pixelGroup]
   
