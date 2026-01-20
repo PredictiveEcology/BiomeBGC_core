@@ -188,6 +188,10 @@ Init <- function(sim) {
   sim$annualOutput <- lapply(res, readAnnualOutput) |> rbindlist(idcol = "pixelGroup")
   sim$annualOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualOutput$pixelGroup]
   
+  # remove the inputs/outputs folder of the temporary Biome-BGC folder
+  # because it can fill up disk space.
+  purgeBGCdirs(bbgcPath)
+  
   return(invisible(sim))
 }
 
@@ -311,6 +315,11 @@ readAnnualOutput <- function(res){
     annualOutput
   )
   return(annualOutput)
+}
+
+purgeBGCdirs <- function(path){
+  unlink(file.path(path, "outputs"), recursive=TRUE)
+  unlink(file.path(path, "inputs"), recursive=TRUE)
 }
 
 .inputObjects <- function(sim) {
