@@ -19,7 +19,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
-  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel"),
+  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel", "parallelly"),
   parameters = bindrows(
     defineParameter("argv", "character", "-a", NA, NA,
                     "Arguments for the BiomeBGC library (same as 'bgc' commandline application)"),
@@ -117,58 +117,77 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 Init <- function(sim) {
   ## Arguments for the BiomeBGC library
   argv <- params(sim)$BiomeBGC_core$argv
+  
   ## Set the simulation directory
   bbgcPath <- params(sim)$BiomeBGC_core$bbgcPath
   createBGCdirs(sim)
-  # execute spinups
+  
+  # paths to the spinup ini files
   spinupIniPaths <- file.path(
     bbgcPath,
     "inputs" ,
     "ini",
     paste0(sim$pixelGroupParameters$pixelGroup, "_spinup.ini")
   )
-  if(params(sim)$BiomeBGC_core$parallel.cores > 1){
-    cl <- makePSOCKcluster(params(sim)$BiomeBGC_core$parallel.cores)
-    clusterEvalQ(cl, library(BiomeBGCR))
-    res <- parLapply(cl, spinupIniPaths, function(iniPath) {
-      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
-      # Run spinup and silence the messaging
-      log <- capture.output({
-        resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
-      })
-      if (resi[[1]] != 0) stop("Spinup error.")
-      return(resi[[2]][[1]])
-    })
-  } else {
-    res <- lapply(spinupIniPaths, function(iniPath) {
-      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
-      # Run spinup and silence the messaging
-      log <- capture.output({
-        resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
-      })
-      if (resi[[1]] != 0) stop("Spinup error.")
-      return(resi[[2]][[1]])
-    })
-  }
-  
-  ## Simulate
-  # execute the simulations
+  # paths to the main simulation ini files
   iniPaths <- file.path(bbgcPath,
                         "inputs" ,
                         "ini",
                         paste0(sim$pixelGroupParameters$pixelGroup, ".ini"))
-  if(params(sim)$BiomeBGC_core$parallel.cores > 1){
-    res <-  parLapply(cl, iniPaths, function(iniPath) {
-      message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
-      # Run simulation and silence the messaging
+  
+  # determine the number of cores to use
+  n_pixelGroups <- length(iniPaths)
+  n_cores <- min(P(sim)$parallel.cores, parallelly::availableCores() - 1, n_pixelGroups)
+  
+  # Either in parallel or sequentially
+  if(n_cores > 1){
+    
+    # Set up the cluster
+    cl <- parallelly::makeClusterPSOCK(
+      n_cores,
+      default_packages = c("BiomeBGCR", "utils"),
+      rscript_libs = .libPaths(),
+      autoStop = TRUE
+    )
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    parallel::clusterExport(cl, c("argv", "bbgcPath", "readDailyOutput", "readMonthlyAverages"), envir = environment())
+    
+    # Execute the spinup in parallel
+    message("Running the spinup for ", n_pixelGroups, " pixelGroups in parallel using ", n_cores, " cores.")
+    parLapply(cl, spinupIniPaths, function(iniPath) {
+      resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+      if (resi[[1]] != 0)
+        stop("Spinup error.")
+    })
+    
+    # Run the main simulation in parallel
+    message("Running the main simulations in parallel using ", n_cores, " cores.")
+    res <- parLapply(cl, iniPaths, function(iniPath) {
       log <- capture.output({
         resi <- bgcExecute(argv, iniPath, bbgcPath)
       })
       if (resi[[1]] != 0) stop("Simulation error.")
       return(resi[[2]][[1]])
     })
-    stopCluster(cl)
+    
+    # Read the outputs
+    message("Reading the output files.")
+    sim$dailyOutput <- parLapply(cl, res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+    sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+    
   } else {
+    
+    # Run the spinup
+    lapply(spinupIniPaths, function(iniPath) {
+      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
+      # Silence the messaging
+      log <- capture.output({
+        resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+      })
+      if (resi[[1]] != 0) stop("Spinup error.")
+    })
+    
+    # Run the main simulation
     res <- lapply(iniPaths, function(iniPath) {
       message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
       # Run simulation and silence the messaging
@@ -178,15 +197,22 @@ Init <- function(sim) {
       if (resi[[1]] != 0) stop("Simulation error.")
       return(resi[[2]][[1]])
     })
+    
+    # Read the outputs
+    message("Reading the output files.")
+    sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+    sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+    
   }
   
-  ## Output processing
-  # sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-  # sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
-  # sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-  # sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
-  sim$annualOutput <- lapply(res, readAnnualOutput) |> rbindlist(idcol = "pixelGroup")
-  sim$annualOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualOutput$pixelGroup]
+  # Get the annual outputs
+  # Read the summary
+  sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+  sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+  sim$annualSummary <- lapply(sim$bbgc.ini, readAnnualSummary, path = bbgcPath) |> rbindlist(idcol = "pixelGroup")
+  # Compute the annual average
+  outputCols <- setdiff(colnames(sim$monthlyAverages), c("pixelGroup", "year", "month"))
+  sim$annualAverages <- sim$dailyOutput[, lapply(.SD, mean), by = c("pixelGroup", "year"), .SDcols = outputCols]
   
   # remove the inputs/outputs folder of the temporary Biome-BGC folder
   # because it can fill up disk space.
@@ -282,38 +308,17 @@ readMonthlyAverages <- function(res){
   return(monAvg)
 }
 
-readAnnualAverages <- function(res){
-  # Get columns names
-  colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
-  # Get annual averages output file location
-  annualAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".annavgout.ascii")
-  # Read annual averages output file
-  annualAvg <- read.table(annualAvgFile, header = FALSE, col.names = colNames)
-  # Add year
-  firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
-  nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
-  annualAvg <- data.frame(
-    year = firstyear:(firstyear+nbYears-1),
-    annualAvg
-  )
-  return(annualAvg)
-}
-
-readAnnualOutput <- function(res){
+readAnnualSummary <- function(res, path){
+  
   # Get column names
-  colNames <- res$ANNUAL_OUTPUT$comment[-c(1,2)]
-  colNames <- gsub(" ", "_", colNames)
+  colNames <- c("year", "prcp", "tavg", "LAI", "ET", "OF", "NPP", "NPB")
+  
   # Get annual output file location
-  annualOutputFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".annout.ascii")
+  annualOutputFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), "_ann.txt")
+  
   # Read annual output file
-  annualOutput <- read.table(annualOutputFile, header = FALSE, col.names = colNames)
-  # Add year
-  firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
-  nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
-  annualOutput <- data.frame(
-    year = firstyear:(firstyear+nbYears-1),
-    annualOutput
-  )
+  annualOutput <- read.table(file.path(path, annualOutputFile), header = FALSE, col.names = colNames, skip = 10)
+  
   return(annualOutput)
 }
 
