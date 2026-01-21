@@ -82,7 +82,7 @@ defineModule(sim, list(
     createsOutput(
       objectName = "dailyOutput",
       objectClass = "data.table",
-      desc = paste0(
+      desc = paste(
         "The ouput variables for each pixelGroup and day.",
         "The units can be find here: https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h"
       )
@@ -90,7 +90,7 @@ defineModule(sim, list(
     createsOutput(
       objectName = "monthlyAverages",
       objectClass = "data.table",
-      desc = paste0(
+      desc = paste(
         "The daily output variables averaged for each month.",
         "The same units than the dailyOutput."
       )
@@ -98,13 +98,13 @@ defineModule(sim, list(
     createsOutput(
       objectName = "annualAverages",
       objectClass = "data.table",
-      desc = paste0(
+      desc = paste(
         "The daily output variables averaged for each month.",
         "The same units than the dailyOutput."
       )
     )
   )
-)
+))
 
 doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
   switch(
