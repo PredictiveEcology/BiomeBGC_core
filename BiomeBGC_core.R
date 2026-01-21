@@ -63,11 +63,48 @@ defineModule(sim, list(
     )
   ),
   outputObjects = bindrows(
-    createsOutput(objectName = "annualOutput", objectClass = "list", desc = NA),
-    createsOutput(objectName = "dailyOutput", objectClass = "list", desc = NA),
-    createsOutput(objectName = "monthlyAverages", objectClass = "list", desc = NA)
+    createsOutput(
+      objectName = "annualSummary",
+      objectClass = "data.table",
+      desc = "A summary table a fixed set of outputs for each pixelGroup and year.",
+      columns = c(
+        pixelGroup = "The site/pixelGroup Id",
+        year = "Simulation year",
+        prcp = "annual total precipitation (mm/yr)",
+        tavg = "annual average air temperature (deg C)",
+        LAI = "annual maximum value of projected leaf area index (m2/m2)",
+        ET = "annual total evapotranspiration (mm/yr)",
+        OF = "annual total outflow (mm/yr)",
+        NPP = "annual total net primary production (gC/m2/yr)",
+        NBP = "annual total net biome production (gC/m2/yr)"
+      )
+    ),
+    createsOutput(
+      objectName = "dailyOutput",
+      objectClass = "data.table",
+      desc = paste0(
+        "The ouput variables for each pixelGroup and day.",
+        "The units can be find here: https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h"
+      )
+    ),
+    createsOutput(
+      objectName = "monthlyAverages",
+      objectClass = "data.table",
+      desc = paste0(
+        "The daily output variables averaged for each month.",
+        "The same units than the dailyOutput."
+      )
+    ),
+    createsOutput(
+      objectName = "annualAverages",
+      objectClass = "data.table",
+      desc = paste0(
+        "The daily output variables averaged for each month.",
+        "The same units than the dailyOutput."
+      )
+    )
   )
-))
+)
 
 doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
   switch(
@@ -308,13 +345,13 @@ readMonthlyAverages <- function(res){
   return(monAvg)
 }
 
-readAnnualSummary <- function(res, path){
+readAnnualSummary <- function(ini, path){
   
   # Get column names
   colNames <- c("year", "prcp", "tavg", "LAI", "ET", "OF", "NPP", "NPB")
   
   # Get annual output file location
-  annualOutputFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), "_ann.txt")
+  annualOutputFile <- paste0(iniGet(ini, "OUTPUT_CONTROL", 1), "_ann.txt")
   
   # Read annual output file
   annualOutput <- read.table(file.path(path, annualOutputFile), header = FALSE, col.names = colNames, skip = 10)
