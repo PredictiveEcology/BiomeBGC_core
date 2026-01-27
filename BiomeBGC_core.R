@@ -21,8 +21,8 @@ defineModule(sim, list(
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
   reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel", "parallelly"),
   parameters = bindrows(
-    defineParameter("argv", "character", "-a", NA, NA,
-                    "Arguments for the BiomeBGC library (same as 'bgc' commandline application)"),
+    defineParameter("argv", "character", "-v3", NA, NA,
+                    "Arguments for the BiomeBGC library (same as 'bgc' commandline application)."),
     defineParameter("bbgcPath", "character", tempdir(), NA, NA,
                     "Path to base directory to use for simulations."),
     defineParameter("bbgcInputPath", "character", inputPath(sim), NA, NA,
@@ -153,10 +153,10 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 ### template initialization
 Init <- function(sim) {
   ## Arguments for the BiomeBGC library
-  argv <- "-v1"
+  argv <- P(sim)$argv
   
   ## Set the simulation directory
-  bbgcPath <- params(sim)$BiomeBGC_core$bbgcPath
+  bbgcPath <- P(sim)$bbgcPath
   createBGCdirs(sim)
   
   # paths to the spinup ini files
@@ -187,7 +187,7 @@ Init <- function(sim) {
     )
     parallel::clusterEvalQ(cl, library(BiomeBGCR))
     on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, c("argv", "bbgcPath", "readDailyOutput"), envir = environment())
+    parallel::clusterExport(cl, c("argv", "bbgcPath", "readDailyOutput", "readMonthlyAverages", "readAnnualAverages"), envir = environment())
     
     # Execute the spinup in parallel
     message("Running the spinup for ", n_pixelGroups, " pixelGroups in parallel using ", n_cores, " cores.")
@@ -198,19 +198,23 @@ Init <- function(sim) {
     })
     # Run the main simulation in parallel
     message("Running the main simulations in parallel using ", n_cores, " cores.")
-    sim$dailyOutput <- parLapply(cl, iniPaths, function(iniPath) {
-      log <- capture.output({
-        resi <- bgcExecute(argv, iniPath, normalizePath(bbgcPath))
-      })
-      if (resi[[1]] != 0) stop("Simulation error.")
-      dailyOutput <- readDailyOutput(resi[[2]][[1]])
-      return(dailyOutput)
+    res <- parLapply(cl, iniPaths, function(iniPath) {
+      resi <- bgcExecute(argv, iniPath, normalizePath(bbgcPath))
+      
+      if (resi[[1]] != 0)
+        stop("Simulation error.")
+      
+      return(resi[[2]][[1]])
     })
     
     # Read the outputs
     message("Reading the output files.")
     sim$dailyOutput <- parLapply(cl, res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
     sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+    sim$monthlyAverages <- parLapply(cl, res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+    sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    sim$annualAverages <- parLapply(cl, res, readAnnualAverages) |> rbindlist(idcol = "pixelGroup")
+    sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
     
   } else {
     
@@ -227,12 +231,15 @@ Init <- function(sim) {
     
     # Run the main simulation
     res <- lapply(iniPaths, function(iniPath) {
+      
       message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
+      
       # Run simulation and silence the messaging
-      log <- capture.output({
-        resi <- bgcExecute(argv, iniPath, bbgcPath)
-      })
-      if (resi[[1]] != 0) stop("Simulation error.")
+      resi <- bgcExecute(argv, iniPath, bbgcPath)
+      
+      if (resi[[1]] != 0)
+        stop("Simulation error.")
+      
       return(resi[[2]][[1]])
     })
     
@@ -339,22 +346,61 @@ readDailyOutput <- function(res){
 }
 
 readMonthlyAverages <- function(res){
-  # Get columns names
+  # file
+  monAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".monavgout")
+  
+  # get the number of entries in binFile
+  nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
+  nbMonths <- nbYears * 12
+  nbOutputs <- as.integer(iniGet(res, "DAILY_OUTPUT", 1))
+  entries <- nbMonths * nbOutputs
+  
+  # read the bin daily output file
+  outputMatrix <- readBin(monAvgFile, double(), entries, size = 4)
+  outputMatrix <- matrix(outputMatrix, nrow = nbMonths, ncol = nbOutputs, byrow = TRUE)
+  
+  # assign column names
   colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
-  # Get monthly averages output file location
-  monAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".monavgout.ascii")
-  # Read monthly averages output file
-  monAvg <- read.table(monAvgFile, header = FALSE, col.names = colNames)
-  # Add month and year
+  colnames(outputMatrix) <- colNames
+  
+  # add year and julian date
   firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
   monAvg <- data.frame(
     year = rep(firstyear:(firstyear+nbYears-1), each = 12),
     month = rep(1:12),
-    monAvg
+    outputMatrix
   )
   return(monAvg)
 }
+
+readAnnualAverages <- function(res){
+  # file
+  annAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".annavgout")
+  
+  # get the number of entries in binFile
+  nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
+  nbOutputs <- as.integer(iniGet(res, "DAILY_OUTPUT", 1))
+  entries <- nbYears * nbOutputs
+  
+  # read the bin daily output file
+  outputMatrix <- readBin(annAvgFile, double(), entries, size = 4)
+  outputMatrix <- matrix(outputMatrix, nrow = nbYears, ncol = nbOutputs, byrow = TRUE)
+  
+  # assign column names
+  colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
+  colnames(outputMatrix) <- colNames
+  
+  # add year and julian date
+  firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
+  nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
+  annAvg <- data.frame(
+    year = firstyear:(firstyear+nbYears-1),
+    outputMatrix
+  )
+  return(annAvg)
+}
+
 
 readAnnualSummary <- function(ini, path){
   
