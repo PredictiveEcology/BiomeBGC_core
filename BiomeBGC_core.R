@@ -253,17 +253,6 @@ Init <- function(sim) {
     
   }
   
-  # Get the annual outputs
-  # Read the summary
-  # sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-  # sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
-  # sim$annualSummary <- lapply(sim$bbgc.ini, readAnnualSummary, path = bbgcPath) |> rbindlist(idcol = "pixelGroup")
-  # # Compute the annual average
-  # outputCols <- setdiff(colnames(sim$monthlyAverages), c("pixelGroup", "year", "month"))
-  # sim$annualAverages <- sim$dailyOutput[, lapply(.SD, mean), by = c("pixelGroup", "year"), .SDcols = outputCols]
-  
-  # remove the inputs/outputs folder of the temporary Biome-BGC folder
-  # because it can fill up disk space.
   purgeBGCdirs(bbgcPath)
   
   return(invisible(sim))
