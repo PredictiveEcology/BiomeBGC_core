@@ -26,6 +26,10 @@ defineModule(sim, list(
                     "Path to base directory to use for simulations."),
     defineParameter("bbgcInputPath", "character", inputPath(sim), NA, NA,
                     "Path to the Biome-BGC input directory."),
+    defineParameter("returnDailyEstimates", "logical", TRUE, NA, NA,
+                    "Controls whether dailyOutput object is returned by the simulation."),
+    defineParameter("returnMonthlyEstimates", "logical", TRUE, NA, NA,
+                    "Controls whether monthlyAverages object is returned by the simulation."),
     defineParameter("parallel.cores", "integer", 1L, 1L, NA,
                     "Number of cores used to execute the simulation"),
     defineParameter(".plots", "character", "screen", NA, NA,
@@ -244,10 +248,14 @@ Init <- function(sim) {
     
     # Read the outputs
     message("Reading the output files.")
-    sim$dailyOutput <- parLapply(cl, res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-    sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
-    sim$monthlyAverages <- parLapply(cl, res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-    sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    if(P(sim)$returnDailyEstimates){
+      sim$dailyOutput <- parLapply(cl, res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+    }
+    if(P(sim)$returnMonthlyEstimates){
+      sim$monthlyAverages <- parLapply(cl, res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    }
     sim$annualAverages <- parLapply(cl, res, readAnnualAverages) |> rbindlist(idcol = "pixelGroup")
     sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
     
@@ -279,10 +287,14 @@ Init <- function(sim) {
     
     # Read the outputs
     message("Reading the output files.")
-    sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-    sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
-    sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-    sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    if(P(sim)$returnDailyEstimates){
+      sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+    }
+    if(P(sim)$returnMonthlyEstimates){
+      sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    }
     sim$annualAverages <- lapply(res, readAnnualAverages) |> rbindlist(idcol = "pixelGroup")
     sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
     
