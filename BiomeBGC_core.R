@@ -269,7 +269,7 @@ Init <- function(sim) {
       if (resi[[1]] != 0) stop("Spinup error.")
       
       return(resi[[2]][[1]])
-    }) |> Cache()
+    })
     
     # Run the main simulation
     res <- lapply(iniPaths, function(iniPath) {
