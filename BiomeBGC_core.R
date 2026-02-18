@@ -196,6 +196,16 @@ Init <- function(sim) {
   
   ## Set the simulation directory
   bbgcPath <- P(sim)$bbgcPath
+  
+  ## Change the ini files if parameters returnDailyEstimates or returnMonthlyEstimates are set to false
+  sim$bbgc.ini <- lapply(sim$bbgc.ini, function(ini){
+    iniSet(ini, "OUTPUT_CONTROL", 2:3, 
+           c(as.integer(P(sim)$returnDailyEstimates), # 1 = write daily output   0 = no daily output
+             as.integer(P(sim)$returnMonthlyEstimates) # 1 = monthly avg of daily variables  0 = no monthly avg
+           )
+    )
+  })
+  
   createBGCdirs(sim)
   
   # paths to the spinup ini files
