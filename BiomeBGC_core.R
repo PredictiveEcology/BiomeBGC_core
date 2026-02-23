@@ -18,7 +18,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
-  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 2.1.8.9013)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel", "parallelly"),
+  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 3.0.3)", "ggplot2", "PredictiveEcology/BiomeBGCR@development", "parallel", "parallelly"),
   parameters = bindrows(
     defineParameter("argv", "character", "-v3", NA, NA,
                     "Arguments for the BiomeBGC library (same as 'bgc' commandline application)."),
