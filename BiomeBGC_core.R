@@ -55,13 +55,13 @@ defineModule(sim, list(
     expectsInput(
       objectName = "bbgcSpinup.ini",
       objectClass = "character",
-      desc = paste("Biome-BGC initialization files for the spinup.", 
+      desc = paste("Biome-BGC initialization files for the spinup.",
                    "Path to the .ini files (one path per site/scenario).")
     ),
     expectsInput(
       objectName = "bbgc.ini",
       objectClass = "character",
-      desc = paste("Biome-BGC initialization files.", 
+      desc = paste("Biome-BGC initialization files.",
                    "Path to the .ini files (one path per site/scenario).")
     )
   ),
@@ -191,6 +191,12 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 
 ### template initialization
 Init <- function(sim) {
+  
+  # if there are no treed-pixels, skip all events
+  if (all(is.na(values(sim$dominantSpecies)))) {
+    return(invisible(sim))
+  }
+  
   ## Arguments for the BiomeBGC library
   argv <- P(sim)$argv
   
@@ -199,7 +205,7 @@ Init <- function(sim) {
   
   ## Change the ini files if parameters returnDailyEstimates or returnMonthlyEstimates are set to false
   sim$bbgc.ini <- lapply(sim$bbgc.ini, function(ini){
-    iniSet(ini, "OUTPUT_CONTROL", 2:3, 
+    iniSet(ini, "OUTPUT_CONTROL", 2:3,
            c(as.integer(P(sim)$returnDailyEstimates), # 1 = write daily output   0 = no daily output
              as.integer(P(sim)$returnMonthlyEstimates) # 1 = monthly avg of daily variables  0 = no monthly avg
            )
