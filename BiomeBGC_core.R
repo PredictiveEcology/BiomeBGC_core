@@ -332,7 +332,7 @@ createBGCdirs <- function(sim) {
     
   }, logical(1))
   dir.create(file.path(bbgcPath, "outputs"), recursive = TRUE, showWarnings = FALSE)
-  dir.create(file.path(bbgcPath, "restart"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(bbgcPath, "inputs", "restart"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bbgcPath, "inputs", "ini"), recursive = TRUE, showWarnings = FALSE)
   
   # Copy input files to simulation directory
