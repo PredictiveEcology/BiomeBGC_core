@@ -332,6 +332,7 @@ createBGCdirs <- function(sim) {
     
   }, logical(1))
   dir.create(file.path(bbgcPath, "outputs"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(bbgcPath, "restart"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bbgcPath, "inputs", "ini"), recursive = TRUE, showWarnings = FALSE)
   
   # Copy input files to simulation directory
@@ -341,14 +342,16 @@ createBGCdirs <- function(sim) {
   }, logical(1))
   
   # Copy ini files into input directory
-  lapply(sim$pixelGroupParameters$pixelGroup, function(pixelGroup_i){
+  nPixelGroups <- length(sim$bbgc.ini)
+  lapply(seq_len(nPixelGroups), function(pixelGroup_i){
     # Copy ini file into input directory
-    ini <- sim$bbgc.ini[[as.character(pixelGroup_i)]]
-    fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroup_i, ".ini"))
+    ini <- sim$bbgc.ini[[pixelGroup_i]]
+    pixelGroupName <- sim$pixelGroupParameters$pixelGroup[pixelGroup_i]
+    fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroupName, ".ini"))
     iniWrite(ini, fileName = fileName)
     # Copy spinup ini file into input directory
-    ini <- sim$bbgcSpinup.ini[[as.character(pixelGroup_i)]]
-    fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroup_i, "_spinup.ini"))
+    ini <- sim$bbgcSpinup.ini[[pixelGroup_i]]
+    fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroupName, "_spinup.ini"))
     iniWrite(ini, fileName = fileName)
   })
   return(invisible(sim))
@@ -358,13 +361,13 @@ extractInputFiles <- function(inis){
   inputFilePaths <- c()
   for (ini in inis){
     metInputPath <- iniGet(ini, "MET_INPUT", 1)
-    restartInputPath <- ifelse(iniGet(ini, "RESTART", 1) == "0", NA, iniGet(ini, "RESTART", 5))
+    #restartInputPath <- ifelse(iniGet(ini, "RESTART", 1) == "0", NA, iniGet(ini, "RESTART", 5))
     co2Inputs <- ifelse(iniGet(ini, "CO2_CONTROL", 1) == "0",
                         NA,
                         iniGet(ini, "CO2_CONTROL", 3))
     epcInputs <- iniGet(ini, "EPC_FILE", 1)
     inputFilePaths <- c(inputFilePaths,
-                        c(metInputPath, restartInputPath, co2Inputs, epcInputs)) |>
+                        c(metInputPath, co2Inputs, epcInputs)) |>
       unique() |> na.omit()
   }
   inputFilePaths <- gsub("inputs/", "",inputFilePaths)
