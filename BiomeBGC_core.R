@@ -193,7 +193,7 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 Init <- function(sim) {
   
   # if there are no treed-pixels, skip all events
-  if (all(is.na(values(sim$dominantSpecies)))) {
+  if (inherits(sim$dominantSpecies, "SpatRater") &&  all(is.na(values(sim$dominantSpecies)))) {
     return(invisible(sim))
   }
   
