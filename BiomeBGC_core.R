@@ -32,6 +32,8 @@ defineModule(sim, list(
                     "Controls whether monthlyAverages object is returned by the simulation."),
     defineParameter("parallel.cores", "integer", 1L, 1L, NA,
                     "Number of cores used to execute the simulation"),
+    defineParameter("saveYears", "numeric", NA, NA, NA,
+                    "Controls the years for which the output variables are saved."),
     defineParameter(".plots", "character", "screen", NA, NA,
                     "Used by Plots function, which can be optionally used here"),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
@@ -122,6 +124,9 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
       # schedule plotting
       if (anyPlotting(P(sim)$.plots)) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "plot", eventPriority = 12)
       
+      # schedule saving
+      if (!is.na(P(sim)$saveYears)) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "save", eventPriority = 12)
+      
     },
     plot = {
       figPath <- file.path(outputPath(sim), "BiomeBGC_figures")
@@ -184,6 +189,23 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
       }
       
     },
+    save = {
+      outPath <- outPath(sim)
+      
+      if(P(sim)$returnDailyEstimates){
+        qs_save(dailyOutput[year %in% P(sim)$saveYears], 
+                file.path(outPath, "dailyEstimates.qs"))
+      }
+      
+      if(P(sim)$returnMonthlyEstimates){
+        qs_save(monthlyAverages[year %in% P(sim)$saveYears], 
+                file.path(outPath, "monthlyAverages.qs"))
+      }
+      
+      qs_save(annualAverages[year %in% P(sim)$saveYears], 
+              file.path(outPath, "annualAverages.qs"))
+      
+    }
     warning(noEventWarning(sim))
   )
   return(invisible(sim))
