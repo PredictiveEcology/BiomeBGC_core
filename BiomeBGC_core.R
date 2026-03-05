@@ -192,20 +192,24 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
       
     },
     save = {
-      outPath <- outPath(sim)
       
-      if(P(sim)$returnDailyEstimates){
-        qs_save(dailyOutput[year %in% P(sim)$saveYears], 
-                file.path(outPath, "dailyEstimates.qs"))
+      if(!is.null(sim$annualAverages)){
+        outPath <- outputPath(sim)
+        
+        if(P(sim)$returnDailyEstimates){
+          qs_save(dailyOutput[year %in% P(sim)$saveYears],
+                  file.path(outPath, "dailyEstimates.qs"))
+        }
+        
+        if(P(sim)$returnMonthlyEstimates){
+          qs_save(monthlyAverages[year %in% P(sim)$saveYears],
+                  file.path(outPath, "monthlyAverages.qs"))
+        }
+        
+        qs_save(annualAverages[year %in% P(sim)$saveYears],
+                file.path(outPath, "annualAverages.qs"))
+        
       }
-      
-      if(P(sim)$returnMonthlyEstimates){
-        qs_save(monthlyAverages[year %in% P(sim)$saveYears], 
-                file.path(outPath, "monthlyAverages.qs"))
-      }
-      
-      qs_save(annualAverages[year %in% P(sim)$saveYears], 
-              file.path(outPath, "annualAverages.qs"))
       
     },
     warning(noEventWarning(sim))
