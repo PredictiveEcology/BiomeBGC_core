@@ -19,8 +19,7 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
   reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 3.0.3)", "ggplot2", 
-                  "PredictiveEcology/BiomeBGCR@development", "parallel", "parallelly",
-                  "qs2"),
+                  "PredictiveEcology/BiomeBGCR@development", "future.apply", "qs2"),
   parameters = bindrows(
     defineParameter("argv", "character", "-v3", NA, NA,
                     "Arguments for the BiomeBGC library (same as 'bgc' commandline application)."),
@@ -268,27 +267,20 @@ Init <- function(sim) {
       rscript_libs = .libPaths(),
       autoStop = TRUE
     )
-    parallel::clusterEvalQ(cl, library(BiomeBGCR))
     on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, c("argv", "bbgcPath", "readDailyOutput", "readMonthlyAverages", "readAnnualAverages"), envir = environment())
     
-    # Execute the spinup in parallel
-    message("Running the spinup for ", n_pixelGroups, " pixelGroups in parallel using ", n_cores, " cores.")
-    parLapply(cl, spinupIniPaths, function(iniPath) {
-      resi <- bgcExecuteSpinup(argv, iniPath, normalizePath(bbgcPath))
-      if (resi[[1]] != 0)
-        stop("Spinup error.")
-    })
-    # Run the main simulation in parallel
-    message("Running the main simulations in parallel using ", n_cores, " cores.")
-    res <- parLapply(cl, iniPaths, function(iniPath) {
-      resi <- bgcExecute(argv, iniPath, normalizePath(bbgcPath))
-      
-      if (resi[[1]] != 0)
-        stop("Simulation error.")
-      
-      return(resi[[2]][[1]])
-    })
+    spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
+    go_chunks <- split_into_chunks(iniPath, n_cores)
+    
+    plan(multisession, workers = n_cores)
+    
+    res <- future_lapply(
+      spinupIniPaths = spinup_chunks,
+      iniPaths = go_chunks,
+      spinup_worker,
+      argv = argv,
+      bbgcPath = bbgcPath
+    )
     
     # Read the outputs
     message("Reading the output files.")
