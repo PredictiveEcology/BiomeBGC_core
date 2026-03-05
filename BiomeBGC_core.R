@@ -207,7 +207,7 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
       qs_save(annualAverages[year %in% P(sim)$saveYears], 
               file.path(outPath, "annualAverages.qs"))
       
-    }
+    },
     warning(noEventWarning(sim))
   )
   return(invisible(sim))
