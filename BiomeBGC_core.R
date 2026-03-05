@@ -127,7 +127,7 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
       if (anyPlotting(P(sim)$.plots)) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "plot", eventPriority = 12)
       
       # schedule saving
-      if (!is.na(P(sim)$saveYears)) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "save", eventPriority = 12)
+      if (any(!is.na(P(sim)$saveYears))) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "save", eventPriority = 12)
       
     },
     plot = {
