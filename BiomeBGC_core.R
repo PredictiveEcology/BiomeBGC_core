@@ -260,39 +260,38 @@ Init <- function(sim) {
   
   # Either in parallel or sequentially
   if(n_cores > 1){
-    
-    # Set up the cluster
-    cl <- parallelly::makeClusterPSOCK(
-      n_cores,
-      rscript_libs = .libPaths(),
-      autoStop = TRUE
-    )
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
-    go_chunks <- split_into_chunks(iniPath, n_cores)
-    
     plan(multisession, workers = n_cores)
-    
     res <- future_lapply(
-      spinupIniPaths = spinup_chunks,
-      iniPaths = go_chunks,
-      spinup_worker,
+      X = spinup_chunks,
+      FUN = simulation_worker,
       argv = argv,
-      bbgcPath = bbgcPath
+      bbgcPath = bbgcPath,
+      readDaily = P(sim)$returnDailyEstimates,
+      readMonthly = P(sim)$returnMonthlyEstimates,
+      readAnnual = TRUE
     )
-    
+    # shut down workers
+    plan(sequential)
     # Read the outputs
-    message("Reading the output files.")
     if(P(sim)$returnDailyEstimates){
-      sim$dailyOutput <- parLapply(cl, res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
+      sim$dailyOutput <- rbindlist(
+        lapply(res, function(x) rbindlist(lapply(x, `[[`, "daily"))),
+        idcol = "pixelGroup"
+      )
       sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
     }
     if(P(sim)$returnMonthlyEstimates){
-      sim$monthlyAverages <- parLapply(cl, res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
+      sim$monthlyAverages <- rbindlist(
+        lapply(res, function(x) rbindlist(lapply(x, `[[`, "monthly"))),
+        idcol = "pixelGroup"
+      )
       sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
     }
-    sim$annualAverages <- parLapply(cl, res, readAnnualAverages) |> rbindlist(idcol = "pixelGroup")
+    sim$annualAverages <- rbindlist(
+      lapply(res, function(x) rbindlist(lapply(x, `[[`, "annual"))),
+      idcol = "pixelGroup"
+    )
     sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
     
   } else {
@@ -300,7 +299,11 @@ Init <- function(sim) {
     res <- lapply(spinupIniPaths, function(iniPath) {
       message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
       
-      resi <- bgcExecuteSpinup(argv, iniPath, bbgcPath)
+      log <- capture.output({
+        resi <- bgcExecuteSpinup(argv = argv,
+                                 iniFiles = spinupIniPath,
+                                 path = bbgcPath)
+      })
       
       if (resi[[1]] != 0) stop("Spinup error.")
       
