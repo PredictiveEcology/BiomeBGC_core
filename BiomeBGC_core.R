@@ -273,7 +273,8 @@ Init <- function(sim) {
       bbgcPath = bbgcPath,
       readDaily = P(sim)$returnDailyEstimates,
       readMonthly = P(sim)$returnMonthlyEstimates,
-      readAnnual = TRUE
+      readAnnual = TRUE,
+      future.packages = c("data.table", "BiomeBGCR")
     )
     # shut down workers
     plan(sequential)

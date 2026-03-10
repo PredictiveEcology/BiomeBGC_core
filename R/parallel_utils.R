@@ -5,9 +5,7 @@ split_into_chunks <- function(x, n) {
 
 # Function used by the workers to run the spinup and the go simulations
 simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMonthly, readAnnual) {
-  # load needed library
-  library(BiomeBGCR)
-  
+
   # Prepare the inputs/outputs
   bbgcPath <- normalizePath(bbgcPath)
   
