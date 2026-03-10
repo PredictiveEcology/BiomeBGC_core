@@ -260,7 +260,7 @@ Init <- function(sim) {
   
   # Either in parallel or sequentially
   if(n_cores > 1){
-    message("Running simulation for ", n_pixelGroups, " using ", n_cores, " cores.")
+    message("Running simulation for ", n_pixelGroups, " pixel groups using ", n_cores, " cores.")
     if(n_pixelGroups / n_cores > 100) {
       message("Expect this to take some time (several minutes to a couple hours...)")
     }
