@@ -18,8 +18,8 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("NEWS.md", "README.md", "BiomeBGC_core.Rmd"),
-  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 3.0.3)", "ggplot2", 
-                  "PredictiveEcology/BiomeBGCR@development", "future.apply", "qs2"),
+  reqdPkgs = list("PredictiveEcology/SpaDES.core@box (>= 3.0.3)", "ggplot2",
+                  "PredictiveEcology/BiomeBGCR@development", "future.apply", "qs2", "future"),
   parameters = bindrows(
     defineParameter("argv", "character", "-v3", NA, NA,
                     "Arguments for the BiomeBGC library (same as 'bgc' commandline application)."),
@@ -196,16 +196,16 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
         outPath <- outputPath(sim)
         
         if(P(sim)$returnDailyEstimates){
-          qs_save(dailyOutput[year %in% P(sim)$saveYears],
+          qs_save(sim$dailyOutput[year %in% P(sim)$saveYears],
                   file.path(outPath, "dailyEstimates.qs"))
         }
         
         if(P(sim)$returnMonthlyEstimates){
-          qs_save(monthlyAverages[year %in% P(sim)$saveYears],
+          qs_save(sim$monthlyAverages[year %in% P(sim)$saveYears],
                   file.path(outPath, "monthlyAverages.qs"))
         }
         
-        qs_save(annualAverages[year %in% P(sim)$saveYears],
+        qs_save(sim$annualAverages[year %in% P(sim)$saveYears],
                 file.path(outPath, "annualAverages.qs"))
         
       }
@@ -279,20 +279,20 @@ Init <- function(sim) {
         lapply(res, function(x) rbindlist(lapply(x, `[[`, "daily"))),
         idcol = "pixelGroup"
       )
-      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$dailyOutput$pixelGroup)]
     }
     if(P(sim)$returnMonthlyEstimates){
       sim$monthlyAverages <- rbindlist(
         lapply(res, function(x) rbindlist(lapply(x, `[[`, "monthly"))),
         idcol = "pixelGroup"
       )
-      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$monthlyAverages$pixelGroup)]
     }
     sim$annualAverages <- rbindlist(
       lapply(res, function(x) rbindlist(lapply(x, `[[`, "annual"))),
       idcol = "pixelGroup"
     )
-    sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
+    sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$annualAverages$pixelGroup)]
     
   } else {
     # Run the spinup
@@ -301,7 +301,7 @@ Init <- function(sim) {
       
       log <- capture.output({
         resi <- bgcExecuteSpinup(argv = argv,
-                                 iniFiles = spinupIniPath,
+                                 iniFiles = iniPath,
                                  path = bbgcPath)
       })
       
