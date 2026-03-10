@@ -15,6 +15,8 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
   
   iniPaths <- gsub("_spinup", "", spinupIniPaths)
   
+  pixelGroups <- as.numeric(tools::file_path_sans_ext(basename(iniPaths)))
+  
   # For each path, run the spinup and simulation
   for (i in seq_along(iniPaths)) {
     
@@ -44,14 +46,24 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
     
     out <- list()
     
-    if (readDaily)
+    if (readDaily){
       out$daily <- readDailyOutput(resi[[2]][[1]])
+      out$daily$pixelGroup <- pixelGroups[i]
+      setcolorder(out$daily, "pixelGroup")
+    }
     
-    if (readMonthly)
+    
+    if (readMonthly){
       out$monthly <- readMonthlyAverages(resi[[2]][[1]])
+      out$monthly$pixelGroup <- pixelGroups[i]
+      setcolorder(out$monthly, "pixelGroup")
+    }
     
-    if (readAnnual)
+    if (readAnnual){
       out$annual <- readAnnualAverages(resi[[2]][[1]])
+      out$annual$pixelGroup <- pixelGroups[i]
+      setcolorder(out$annual, "pixelGroup")
+    }
     
     results[[i]] <- out
     

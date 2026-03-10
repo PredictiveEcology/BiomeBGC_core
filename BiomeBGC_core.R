@@ -260,6 +260,10 @@ Init <- function(sim) {
   
   # Either in parallel or sequentially
   if(n_cores > 1){
+    message("Running simulation for ", n_pixelGroups, " using ", n_cores, " cores.")
+    if(n_pixelGroups / n_cores > 100) {
+      message("Expect this to take some time (several minutes to a couple hours...)")
+    }
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     plan(multisession, workers = n_cores)
     res <- future_lapply(
@@ -275,24 +279,19 @@ Init <- function(sim) {
     plan(sequential)
     # Read the outputs
     if(P(sim)$returnDailyEstimates){
-      sim$dailyOutput <- rbindlist(
-        lapply(res, function(x) rbindlist(lapply(x, `[[`, "daily"))),
-        idcol = "pixelGroup"
-      )
-      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$dailyOutput$pixelGroup)]
+      sim$dailyOutput <- rbindlist(lapply(res, function(x)
+        rbindlist(lapply(x, `[[`, "daily"))))
+      setorder(sim$dailyOutput, pixelGroup, year, day)
     }
     if(P(sim)$returnMonthlyEstimates){
-      sim$monthlyAverages <- rbindlist(
-        lapply(res, function(x) rbindlist(lapply(x, `[[`, "monthly"))),
-        idcol = "pixelGroup"
-      )
-      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$monthlyAverages$pixelGroup)]
+      sim$monthlyAverages <- rbindlist(lapply(res, function(x)
+        rbindlist(lapply(x, `[[`, "monthly"))))
+      setorder(sim$monthlyAverages$pixelGroup, pixelGroup, year, month)
+      
     }
-    sim$annualAverages <- rbindlist(
-      lapply(res, function(x) rbindlist(lapply(x, `[[`, "annual"))),
-      idcol = "pixelGroup"
-    )
-    sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[as.numeric(sim$annualAverages$pixelGroup)]
+    sim$annualAverages <- rbindlist(lapply(res, function(x)
+      rbindlist(lapply(x, `[[`, "annual"))))
+    setorder(sim$annualAverages, pixelGroup, year)
     
   } else {
     # Run the spinup
