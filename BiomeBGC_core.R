@@ -265,16 +265,28 @@ Init <- function(sim) {
       message("Expect this to take some time (several minutes to a couple hours...)")
     }
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
+    readDaily <-  P(sim)$returnDailyEstimates
+    readMonthly <- P(sim)$returnMonthlyEstimates
     plan(multisession, workers = n_cores)
     res <- future_lapply(
       X = spinup_chunks,
       FUN = simulation_worker,
       argv = argv,
       bbgcPath = bbgcPath,
-      readDaily = P(sim)$returnDailyEstimates,
-      readMonthly = P(sim)$returnMonthlyEstimates,
+      readDaily = readDaily,
+      readMonthly = readMonthly,
       readAnnual = TRUE,
-      future.packages = c("data.table", "BiomeBGCR")
+      future.packages = c("BiomeBGCR", "data.table"),
+      future.globals = c(
+        "simulation_worker",
+        "argv",
+        "bbgcPath",
+        "readDaily",
+        "readMonthly",
+        "readDailyOutput",
+        "readMonthlyAverages",
+        "readAnnualAverages"
+      )
     )
     # shut down workers
     plan(sequential)
