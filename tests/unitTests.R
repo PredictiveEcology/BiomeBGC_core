@@ -5,4 +5,4 @@
 testthat::test_dir(file.path("tests", "testthat"))
 
 # Alternative, you can use test_file to test individual test file, e.g.:
-testthat::test_file(file.path("tests", "testthat", "test-template.R"))
+testthat::test_file(file.path("tests", "testthat", "test-1-module-single-site.R"))
