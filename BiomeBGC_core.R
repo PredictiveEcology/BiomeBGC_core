@@ -59,13 +59,15 @@ defineModule(sim, list(
       objectName = "bbgcSpinup.ini",
       objectClass = "character",
       desc = paste("Biome-BGC initialization files for the spinup.",
-                   "Path to the .ini files (one path per site/scenario).")
+                   "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
+                   "one per pixelGroup, named by pixelGroup id")
     ),
     expectsInput(
       objectName = "bbgc.ini",
       objectClass = "character",
       desc = paste("Biome-BGC initialization files.",
-                   "Path to the .ini files (one path per site/scenario).")
+                   "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
+                   "one per pixelGroup, named by pixelGroup id")
     )
   ),
   outputObjects = bindrows(
