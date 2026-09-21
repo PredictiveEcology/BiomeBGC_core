@@ -70,3 +70,44 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
   return(results)
 }
 
+
+# Dispatch simulation_worker() calls to a multisession future cluster.
+#
+# This is a standalone wrapper (rather than inlining plan()/future_lapply()
+# directly in Init()) so that its own environment() can be rebound to
+# globalenv() before it is called. future_lapply()'s automatic global/package
+# detection resolves names starting from the *calling* frame, not just from
+# FUN's environment - and when this code runs as part of a SpaDES module's
+# test suite, Init() (and therefore its calling frame) is defined inside a
+# throwaway package namespace that SpaDES.core::convertToPackage() generates
+# on the fly (e.g. "BiomeBGC.core"), which is never actually installed to a
+# library. Left as-is, future tries to have each worker library() that
+# nonexistent package and fails with "there is no package called
+# 'BiomeBGC.core'". Rebinding this function's environment to globalenv()
+# keeps the calling frame's lexical parent out of that namespace.
+run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMonthly,
+                               n_cores, libPaths) {
+  future::plan(future::multisession, workers = n_cores, rscript_libs = libPaths)
+  on.exit(future::plan(future::sequential), add = TRUE)
+
+  future.apply::future_lapply(
+    X = spinup_chunks,
+    FUN = simulation_worker,
+    argv = argv,
+    bbgcPath = bbgcPath,
+    readDaily = readDaily,
+    readMonthly = readMonthly,
+    readAnnual = TRUE,
+    future.packages = c("BiomeBGCR", "data.table"),
+    future.globals = c(
+      "simulation_worker",
+      "argv",
+      "bbgcPath",
+      "readDaily",
+      "readMonthly",
+      "readDailyOutput",
+      "readMonthlyAverages",
+      "readAnnualAverages"
+    )
+  )
+}

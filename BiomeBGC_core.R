@@ -268,29 +268,32 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    plan(multisession, workers = n_cores)
-    res <- future_lapply(
-      X = spinup_chunks,
-      FUN = simulation_worker,
+    # Rebind run_parallel_sims (and the functions it dispatches to workers) to
+    # globalenv() before calling it. Init() - and therefore run_parallel_sims,
+    # simulation_worker, and its helpers as originally sourced - live inside
+    # the throwaway package namespace SpaDES.core::convertToPackage() creates
+    # for module tests (e.g. "BiomeBGC.core"), which is never installed.
+    # future_lapply()'s automatic package detection resolves names from the
+    # *calling* frame's lexical parents, so leaving that chain rooted in the
+    # module namespace makes every worker try (and fail) to library() it.
+    # Rebinding copies of these functions into globalenv() keeps that lookup
+    # chain clear of the module namespace; see R/parallel_utils.R for details.
+    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "readDailyOutput",
+                         "readMonthlyAverages", "readAnnualAverages")
+    for (fnName in parallelFnNames) {
+      fn <- get(fnName, envir = environment(Init))
+      environment(fn) <- globalenv()
+      assign(fnName, fn, envir = globalenv())
+    }
+    res <- run_parallel_sims(
+      spinup_chunks = spinup_chunks,
       argv = argv,
       bbgcPath = bbgcPath,
       readDaily = readDaily,
       readMonthly = readMonthly,
-      readAnnual = TRUE,
-      future.packages = c("BiomeBGCR", "data.table"),
-      future.globals = c(
-        "simulation_worker",
-        "argv",
-        "bbgcPath",
-        "readDaily",
-        "readMonthly",
-        "readDailyOutput",
-        "readMonthlyAverages",
-        "readAnnualAverages"
-      )
+      n_cores = n_cores,
+      libPaths = .libPaths()
     )
-    # shut down workers
-    plan(sequential)
     # Read the outputs
     if(P(sim)$returnDailyEstimates){
       sim$dailyOutput <- rbindlist(lapply(res, function(x)
