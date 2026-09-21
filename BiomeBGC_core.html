@@ -368,12 +368,12 @@ display: none;
 <p>Provide a summary of user-visible parameters.</p>
 <table>
 <colgroup>
-<col width="9%" />
+<col width="12%" />
 <col width="6%" />
 <col width="7%" />
 <col width="2%" />
 <col width="2%" />
-<col width="71%" />
+<col width="69%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -398,7 +398,7 @@ commandline application).</td>
 <tr class="even">
 <td align="left">bbgcPath</td>
 <td align="left">character</td>
-<td align="left">C:….</td>
+<td align="left">/tmp/Rtm….</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">Path to base directory to use for simulations.</td>
@@ -406,10 +406,28 @@ commandline application).</td>
 <tr class="odd">
 <td align="left">bbgcInputPath</td>
 <td align="left">character</td>
-<td align="left">C:….</td>
+<td align="left">/tmp/Rtm….</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">Path to the Biome-BGC input directory.</td>
+</tr>
+<tr class="even">
+<td align="left">returnDailyEstimates</td>
+<td align="left">logical</td>
+<td align="left">TRUE</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">Controls whether dailyOutput object is returned by the
+simulation.</td>
+</tr>
+<tr class="odd">
+<td align="left">returnMonthlyEstimates</td>
+<td align="left">logical</td>
+<td align="left">TRUE</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">Controls whether monthlyAverages object is returned by
+the simulation.</td>
 </tr>
 <tr class="even">
 <td align="left">parallel.cores</td>
@@ -420,6 +438,15 @@ commandline application).</td>
 <td align="left">Number of cores used to execute the simulation</td>
 </tr>
 <tr class="odd">
+<td align="left">saveYears</td>
+<td align="left">numeric</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">Controls the years for which the output variables are
+saved.</td>
+</tr>
+<tr class="even">
 <td align="left">.plots</td>
 <td align="left">character</td>
 <td align="left">screen</td>
@@ -428,7 +455,7 @@ commandline application).</td>
 <td align="left">Used by Plots function, which can be optionally used
 here</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.plotInitialTime</td>
 <td align="left">numeric</td>
 <td align="left">0</td>
@@ -437,7 +464,7 @@ here</td>
 <td align="left">Describes the simulation time at which the first plot
 event should occur.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.plotInterval</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -446,7 +473,7 @@ event should occur.</td>
 <td align="left">Describes the simulation time interval between plot
 events.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.saveInitialTime</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -455,7 +482,7 @@ events.</td>
 <td align="left">Describes the simulation time at which the first save
 event should occur.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.saveInterval</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -464,7 +491,7 @@ event should occur.</td>
 <td align="left">This describes the simulation time interval between
 save events.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.studyAreaName</td>
 <td align="left">character</td>
 <td align="left">NA</td>
@@ -474,7 +501,7 @@ save events.</td>
 hash of the studyarea obtained using
 <code>reproducible::studyAreaName()</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.seed</td>
 <td align="left">list</td>
 <td align="left"></td>
@@ -482,7 +509,7 @@ hash of the studyarea obtained using
 <td align="left">NA</td>
 <td align="left">Named list of seeds to use for each event (names).</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.useCache</td>
 <td align="left">logical</td>
 <td align="left">FALSE</td>
@@ -517,10 +544,10 @@ the other input files (e.g., ecophysiological constants, meteorological
 data, etc.) are in the project folder.</p>
 <table>
 <colgroup>
-<col width="10%" />
 <col width="8%" />
-<col width="72%" />
-<col width="7%" />
+<col width="6%" />
+<col width="79%" />
+<col width="5%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -534,15 +561,17 @@ data, etc.) are in the project folder.</p>
 <tr class="odd">
 <td align="left">bbgcSpinup.ini</td>
 <td align="left">character</td>
-<td align="left">Biome-BGC initialization files for the spinup. Path to
-the .ini files (one path per site/scenario).</td>
+<td align="left">Biome-BGC initialization files for the spinup. Parsed
+ini object as returned by <code>BiomeBGCR::iniRead()</code>, one per
+pixelGroup, named by pixelGroup id</td>
 <td align="left">NA</td>
 </tr>
 <tr class="even">
 <td align="left">bbgc.ini</td>
 <td align="left">character</td>
-<td align="left">Biome-BGC initialization files. Path to the .ini files
-(one path per site/scenario).</td>
+<td align="left">Biome-BGC initialization files. Parsed ini object as
+returned by <code>BiomeBGCR::iniRead()</code>, one per pixelGroup, named
+by pixelGroup id</td>
 <td align="left">NA</td>
 </tr>
 </tbody>
