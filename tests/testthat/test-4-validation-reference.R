@@ -47,7 +47,7 @@ expectAnnualMatchesReference <- function(annualAverages, pixelGroupId, reference
                                           vars = c("NPP", "NBP", "ET", "LAI")) {
   reference <- readReferenceAnnual(referenceFileName)
 
-  simSite <- annualAverages[pixelGroup == pixelGroupId, .(
+  simSite <- annualAverages[pixelGroup == pixelGroupId, list(
     year,
     NPP = summary.daily_npp * 1000 * 365,
     NBP = summary.daily_nee * 1000 * 365,

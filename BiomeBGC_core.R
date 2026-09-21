@@ -268,7 +268,7 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    plan(multisession, workers = n_cores)
+    plan(multisession, workers = n_cores, rscript_libs = .libPaths())
     res <- future_lapply(
       X = spinup_chunks,
       FUN = simulation_worker,
