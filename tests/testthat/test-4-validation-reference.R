@@ -47,16 +47,33 @@ expectAnnualMatchesReference <- function(annualAverages, pixelGroupId, reference
                                           vars = c("NPP", "NBP", "ET", "LAI")) {
   reference <- readReferenceAnnual(referenceFileName)
 
-  simSite <- annualAverages[pixelGroup == pixelGroupId, .(
-    year,
-    NPP = summary.daily_npp * 1000 * 365,
-    NBP = summary.daily_nee * 1000 * 365,
-    ET  = if ("summary.evapotranspiration" %in% names(annualAverages)) summary.evapotranspiration * 365 else NA_real_,
-    LAI = if ("epv.ytd_maxplai" %in% names(annualAverages)) epv.ytd_maxplai else NA_real_
-  )]
+  ## Subset and derive columns via base indexing ("[["/logical index), not
+  ## data.table's [ NSE (.()/bare column symbols): in some evaluation
+  ## contexts (e.g. this CI test runner) [.data.table dispatch does not
+  ## occur as expected and falls through to [.data.frame, which evaluates
+  ## the j expression as ordinary R code with no access to the
+  ## data.table's columns.
+  siteRows <- annualAverages[["pixelGroup"]] == pixelGroupId
+  hasET  <- "summary.evapotranspiration" %in% names(annualAverages)
+  hasLAI <- "epv.ytd_maxplai" %in% names(annualAverages)
 
-  cmp <- merge(simSite, reference[, .(year, NPP, NBP, ET, LAI)],
-               by = "year", suffixes = c(".sim", ".ref"))
+  simSite <- data.frame(
+    year = annualAverages[["year"]][siteRows],
+    NPP  = annualAverages[["summary.daily_npp"]][siteRows] * 1000 * 365,
+    NBP  = annualAverages[["summary.daily_nee"]][siteRows] * 1000 * 365,
+    ET   = if (hasET) annualAverages[["summary.evapotranspiration"]][siteRows] * 365 else NA_real_,
+    LAI  = if (hasLAI) annualAverages[["epv.ytd_maxplai"]][siteRows] else NA_real_
+  )
+
+  referenceSub <- data.frame(
+    year = reference[["year"]],
+    NPP  = reference[["NPP"]],
+    NBP  = reference[["NBP"]],
+    ET   = reference[["ET"]],
+    LAI  = reference[["LAI"]]
+  )
+
+  cmp <- merge(simSite, referenceSub, by = "year", suffixes = c(".sim", ".ref"))
 
   expect_equal(nrow(cmp), nrow(reference),
                info = paste(label, "- year mismatch with reference"))

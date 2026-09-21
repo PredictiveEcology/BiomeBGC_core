@@ -6,7 +6,7 @@
 ## keyed by pixelGroup id, from BiomeBGCR's example .ini fixtures.
 buildIniInputs <- function(iniFileNames, pixelGroupIds = seq_along(iniFileNames)) {
   ini <- lapply(
-    file.path(spadesTestPaths$bbgcInputPath, "ini", iniFileNames),
+    file.path(system.file("inputs", package = "BiomeBGCR"), "ini", iniFileNames),
     BiomeBGCR::iniRead
   )
   names(ini) <- as.character(pixelGroupIds)
