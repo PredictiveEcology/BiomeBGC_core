@@ -48,8 +48,16 @@ test_that("BiomeBGC_core: parallel and sequential runs agree (Boisvenue 2010, 6 
   data.table::setorder(parallelAnnual, pixelGroup, year)
   data.table::setorder(sequentialAnnual, pixelGroup, year)
 
-  expect_equal(
-    parallelAnnual[, .SD, .SDcols = names(sequentialAnnual)],
-    sequentialAnnual
+  ## Subset/reorder columns via base indexing ("[["), not data.table's `[`
+  ## NSE (.SD/.SDcols): in some evaluation contexts (e.g. the CI test runner)
+  ## [.data.table dispatch does not occur as expected and falls through to
+  ## [.data.frame, which does not understand .SD/.SDcols and silently returns
+  ## a mismatched result rather than erroring (see the analogous comment in
+  ## test-4-validation-reference.R).
+  parallelAnnualSub <- data.table::as.data.table(
+    lapply(names(sequentialAnnual), function(col) parallelAnnual[[col]])
   )
+  data.table::setnames(parallelAnnualSub, names(sequentialAnnual))
+
+  expect_equal(parallelAnnualSub, sequentialAnnual)
 })
