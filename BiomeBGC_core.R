@@ -269,9 +269,20 @@ Init <- function(sim) {
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
     plan(multisession, workers = n_cores, rscript_libs = .libPaths())
+    # Rebind simulation_worker's environment to the global environment before
+    # dispatching it to workers. As defined, simulation_worker's enclosing
+    # environment is the BiomeBGC_core package namespace, which makes future
+    # try to attach that package on each worker to evaluate it - this fails
+    # when the module is loaded in-place (e.g. via pkgload/devtools::load_all(),
+    # as in CI) rather than formally installed, since there is then no
+    # installed "BiomeBGC.core" package for the worker to find. Workers only
+    # need the (installed) packages listed in future.packages plus the
+    # globals passed explicitly below, so this rebinding is safe.
+    workerFun <- simulation_worker
+    environment(workerFun) <- globalenv()
     res <- future_lapply(
       X = spinup_chunks,
-      FUN = simulation_worker,
+      FUN = workerFun,
       argv = argv,
       bbgcPath = bbgcPath,
       readDaily = readDaily,
@@ -279,7 +290,7 @@ Init <- function(sim) {
       readAnnual = TRUE,
       future.packages = c("BiomeBGCR", "data.table"),
       future.globals = c(
-        "simulation_worker",
+        "workerFun",
         "argv",
         "bbgcPath",
         "readDaily",
