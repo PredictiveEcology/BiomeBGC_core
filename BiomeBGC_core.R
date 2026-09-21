@@ -268,34 +268,10 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    plan(multisession, workers = n_cores, rscript_libs = .libPaths())
-    # Rebind the environment of every function passed to workers (directly as
-    # FUN, or indirectly via future.globals) to the global environment before
-    # dispatching. As defined, these functions' enclosing environment is the
-    # BiomeBGC_core package namespace; future's globals-detection inspects
-    # each one's environment(), so leaving it as the package namespace makes
-    # future try to attach BiomeBGC_core's own package on each worker to
-    # reconstruct them. That fails when the module is loaded in-place (e.g.
-    # via pkgload/devtools::load_all(), as in CI) rather than formally
-    # installed, since there is then no installed "BiomeBGC.core" package for
-    # the worker to find. Workers only need the (installed) packages listed
-    # in future.packages plus the globals passed explicitly below, so
-    # rebinding to globalenv() is safe.
-    # simulation_worker's body calls readDailyOutput()/readMonthlyAverages()/
-    # readAnnualAverages() unqualified, resolved by lexical scoping through
-    # its environment() at call time - so those names must be preserved
-    # exactly as-is once workerFun's environment is rebound to globalenv().
-    workerFun <- simulation_worker
-    environment(workerFun) <- globalenv()
-    readDailyOutput <- readDailyOutput
-    environment(readDailyOutput) <- globalenv()
-    readMonthlyAverages <- readMonthlyAverages
-    environment(readMonthlyAverages) <- globalenv()
-    readAnnualAverages <- readAnnualAverages
-    environment(readAnnualAverages) <- globalenv()
+    plan(multisession, workers = n_cores)
     res <- future_lapply(
       X = spinup_chunks,
-      FUN = workerFun,
+      FUN = simulation_worker,
       argv = argv,
       bbgcPath = bbgcPath,
       readDaily = readDaily,
@@ -303,7 +279,7 @@ Init <- function(sim) {
       readAnnual = TRUE,
       future.packages = c("BiomeBGCR", "data.table"),
       future.globals = c(
-        "workerFun",
+        "simulation_worker",
         "argv",
         "bbgcPath",
         "readDaily",
