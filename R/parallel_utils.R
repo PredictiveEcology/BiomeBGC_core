@@ -75,15 +75,7 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
 #
 # This is a standalone wrapper (rather than inlining plan()/future_lapply()
 # directly in Init()) so that its own environment() can be rebound to
-# globalenv() before it is called. future_lapply()'s automatic global/package
-# detection resolves names starting from the *calling* frame, not just from
-# FUN's environment - and when this code runs as part of a SpaDES module's
-# test suite, Init() (and therefore its calling frame) is defined inside a
-# throwaway package namespace that SpaDES.core::convertToPackage() generates
-# on the fly (e.g. "BiomeBGC.core"), which is never actually installed to a
-# library. Left as-is, future tries to have each worker library() that
-# nonexistent package and fails with "there is no package called
-# 'BiomeBGC.core'". Rebinding this function's environment to globalenv()
+# globalenv() before it is called. Rebinding this function's environment to globalenv()
 # keeps the calling frame's lexical parent out of that namespace.
 run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMonthly,
                                n_cores, libPaths) {

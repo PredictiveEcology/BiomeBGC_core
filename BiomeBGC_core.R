@@ -269,15 +269,7 @@ Init <- function(sim) {
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
     # Rebind run_parallel_sims (and the functions it dispatches to workers) to
-    # globalenv() before calling it. Init() - and therefore run_parallel_sims,
-    # simulation_worker, and its helpers as originally sourced - live inside
-    # the throwaway package namespace SpaDES.core::convertToPackage() creates
-    # for module tests (e.g. "BiomeBGC.core"), which is never installed.
-    # future_lapply()'s automatic package detection resolves names from the
-    # *calling* frame's lexical parents, so leaving that chain rooted in the
-    # module namespace makes every worker try (and fail) to library() it.
-    # Rebinding copies of these functions into globalenv() keeps that lookup
-    # chain clear of the module namespace; see R/parallel_utils.R for details.
+    # globalenv() before calling it. 
     parallelFnNames <- c("run_parallel_sims", "simulation_worker", "readDailyOutput",
                          "readMonthlyAverages", "readAnnualAverages")
     for (fnName in parallelFnNames) {
