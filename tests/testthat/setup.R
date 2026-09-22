@@ -10,16 +10,14 @@ suppressPackageStartupMessages({
 
 ## Ensure the module's own dependencies (incl. BiomeBGCR, which ships the
 ## example .ini/.epc/.met/.co2 fixtures used by these tests) are available.
-withr::with_options(c(timeout = 600), Require::Require(
-  c(SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]]),
+withr::with_options(c(timeout = 600), Require::Install(
+  unique(c(
+    SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]]#,
+  )),
   repos = unique(c("predictiveecology.r-universe.dev", getOption("repos")))
 ))
 
 ## Paths used by all tests in this suite.
-## Mirrors the naming convention used in CBM_core / LandRCBM_split3pools
-## tests, but is built directly (no external test-harness download) since
-## BiomeBGC_core has no tests/testthat/testdata folder of its own - fixtures
-## instead come from the installed BiomeBGCR package (inst/inputs).
 spadesTestPaths <- local({
   root <- tempfile("BiomeBGC_core_test_")
   dir.create(root, recursive = TRUE)
