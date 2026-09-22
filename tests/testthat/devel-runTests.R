@@ -21,3 +21,6 @@ testthat::test_dir("tests/testthat", filter = "parallel")
 
 # Run numeric regression tests against BiomeBGCR reference outputs only
 testthat::test_dir("tests/testthat", filter = "validation-reference")
+
+# Run integration tests only
+testthat::test_dir("tests/testthat", filter = "integration")

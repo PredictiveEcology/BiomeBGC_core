@@ -10,8 +10,20 @@ suppressPackageStartupMessages({
 
 ## Ensure the module's own dependencies (incl. BiomeBGCR, which ships the
 ## example .ini/.epc/.met/.co2 fixtures used by these tests) are available.
+##
+## Also pulls in BiomeBGC_dataPrep's dependencies: test-5-integration-*.R in
+## this suite chains BiomeBGC_dataPrep + BiomeBGC_core together in a single
+## simInit()/spades() call, so both modules' reqdPkgs must be loadable.
+## BiomeBGC_dataPrep is expected to be checked out as a sibling folder of
+## BiomeBGC_core (as it is in the BiomeBGC workspace), reachable at
+## "../../../BiomeBGC_dataPrep" from tests/testthat.
 withr::with_options(c(timeout = 600), Require::Require(
-  c(SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]]),
+  unique(c(
+    SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]],
+    if (dir.exists("../../../BiomeBGC_dataPrep")) {
+      SpaDES.core::packages(modules = "BiomeBGC_dataPrep", paths = "../../..")[[1]]
+    }
+  )),
   repos = unique(c("predictiveecology.r-universe.dev", getOption("repos")))
 ))
 
@@ -28,6 +40,11 @@ spadesTestPaths <- local({
   list(
     projectPath   = root,
     modulePath    = modulePath,
+    # modulePath above already resolves to the BiomeBGC workspace root,
+    # i.e. the shared parent of both BiomeBGC_core and BiomeBGC_dataPrep
+    # (sibling module folders); kept as its own name for clarity in
+    # integration tests that run both modules in one simInit() call.
+    sharedModulePath = modulePath,
     packagePath   = file.path(root, "packages"),
     cachePath     = file.path(root, "cache"),
     outputPath    = file.path(root, "outputs"),
