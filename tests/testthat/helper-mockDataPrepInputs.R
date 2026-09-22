@@ -7,12 +7,7 @@
 # tests/testthat/helper-mockInputs.R, so that BiomeBGC_core's test suite
 # remains self-contained (does not reach into BiomeBGC_dataPrep's test tree,
 # and does not require both module repos to be checked out as siblings).
-#
-# One difference from the original: the EPC fixture is read directly from
-# BiomeBGCR's shipped inst/inputs/epc/enf.epc (mirroring how the rest of
-# BiomeBGC_core's tests source fixtures from the installed BiomeBGCR package),
-# rather than from a local testdata/epc fixture file (BiomeBGC_core has no
-# tests/testthat/testdata folder of its own).
+
 
 # A minimal, physically-plausible ecophysiological constants row for a
 # single mock species, built from BiomeBGCR's shipped enf.epc fixture so
@@ -112,14 +107,6 @@
 #' Write the physical met/epc/co2 fixture files that BiomeBGC_core's
 #' createBGCdirs() expects to find (and copy) under `inputPath`.
 #'
-#' BiomeBGC_dataPrep only *writes* these files to disk as a side effect of
-#' its own network-based prep functions (prepClimate(), prepEPC(),
-#' prepCo2Concentration()), which are skipped entirely here because the
-#' corresponding sim objects (meteorologicalData, ecophysiologicalConstants,
-#' CO2concentration) are supplied directly as offline mocks. This helper
-#' recreates just enough of that on-disk state - matching the exact
-#' filename conventions BiomeBGC_dataPrep's prepareSpinupIni()/prepareIni()
-#' embed in the .ini files it produces - for BiomeBGC_core to find and copy.
 writeMockDataPrepFixtureFiles <- function(
   inputPath,
   mocks,
@@ -317,10 +304,6 @@ makeMockPolygonInputs <- function(
 }
 
 #' Build mock inputs for a point studyArea.
-#'
-#' Mirrors makeMockPolygonInputs(), but studyArea is a single point and
-#' rasterToMatch covers a small area around it (as required by the fixed
-#' `res(sim$rasterToMatch)` line in the point branch of .inputObjects()).
 makeMockPointInputs <- function(
   simStart = 2000,
   simEnd = 2002,
