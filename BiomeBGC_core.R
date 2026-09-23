@@ -72,10 +72,7 @@ defineModule(sim, list(
     expectsInput(
       objectName = "pixelGroupParameters", objectClass = "data.frame",
       desc = paste("Optional. A table with pixelGroup, dominantSpecies and climatePolygon",
-                   "columns, used only by OutputTrendPlot() for plot faceting/coloring.",
-                   "Not required to run the simulation: bbgc.ini/bbgcSpinup.ini list",
-                   "elements are named by pixelGroup id and are the source of truth for",
-                   "pixelGroup identity.")
+                   "columns, used only by OutputTrendPlot() for plot faceting/coloring.")
     ),
     expectsInput(
       objectName = "pixelGroupMap", objectClass = "SpatRaster",
@@ -212,9 +209,8 @@ Init <- function(sim) {
   
   createBGCdirs(sim)
   
-  # pixelGroup identity comes from the names of the ini lists themselves
-  # (bbgc.ini/bbgcSpinup.ini are named lists keyed by pixelGroup id, set upstream
-  # in BiomeBGC_dataPrep). Assert they agree before relying on them.
+  # pixelGroup identity comes from the names of the ini lists themselves.
+  # Assert they agree before relying on them.
   if (is.null(names(sim$bbgcSpinup.ini)) || is.null(names(sim$bbgc.ini)) ||
       anyNA(names(sim$bbgcSpinup.ini)) || anyNA(names(sim$bbgc.ini))) {
     stop("sim$bbgc.ini and sim$bbgcSpinup.ini must be named lists (names = pixelGroup id).")
