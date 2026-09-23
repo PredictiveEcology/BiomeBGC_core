@@ -494,13 +494,15 @@ OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
 }
 
 OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
-  if (is.null(sim$pixelGroupParameters)) {
-    stop("OutputTrendPlot() requires sim$pixelGroupParameters ",
-         "(columns: pixelGroup, dominantSpecies, climatePolygon) for plot faceting/coloring.")
+  hasPixelGroupParameters <- !is.null(sim$pixelGroupParameters)
+  
+  # get the variables of interest and, if available, the dominant species/climate polygon
+  if (hasPixelGroupParameters) {
+    dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
+                           sim$pixelGroupParameters[, .(pixelGroup, dominantSpecies, climatePolygon)])
+  } else {
+    dt <- sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)]
   }
-  # get the variables of interest and the dominant species
-  dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
-                         sim$pixelGroupParameters[, .(pixelGroup, dominantSpecies, climatePolygon)])
   
   # expand the data table by converting pixelGroup to pixels
   forestedPixelGroups <- data.table(
@@ -518,15 +520,24 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
     dt[, (outputVar) := get(outputVar) * 1000 ]
   
   # calculate the across-pixel annual mean with 95% interval
-  dt <- dt[ ,.(annMean = mean(get(outputVar)), annLower95perc = quantile(get(outputVar), 0), annUpper95perc = quantile(get(outputVar), 1)), by = .(year, dominantSpecies, climatePolygon)]
+  groupingCols <- if (hasPixelGroupParameters) c("year", "dominantSpecies", "climatePolygon") else "year"
+  dt <- dt[ ,.(annMean = mean(get(outputVar)), annLower95perc = quantile(get(outputVar), 0), annUpper95perc = quantile(get(outputVar), 1)), by = groupingCols]
   
   # make the plot
-  p <- ggplot(dt) +
-    geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc, fill = dominantSpecies ), alpha = 0.5) +
-    geom_line(aes(x = year, y = annMean, color = dominantSpecies)) +
-    labs(x = "Year", y = ylab, color = "Dominant species", fill = "Dominant species") +
-    theme_bw() +
-    facet_wrap(~climatePolygon, labeller = as_labeller(function(labels) {paste0("Climate polygon: ", labels)}))
+  if (hasPixelGroupParameters) {
+    p <- ggplot(dt) +
+      geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc, fill = dominantSpecies ), alpha = 0.5) +
+      geom_line(aes(x = year, y = annMean, color = dominantSpecies)) +
+      labs(x = "Year", y = ylab, color = "Dominant species", fill = "Dominant species") +
+      theme_bw() +
+      facet_wrap(~climatePolygon, labeller = as_labeller(function(labels) {paste0("Climate polygon: ", labels)}))
+  } else {
+    p <- ggplot(dt) +
+      geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc ), alpha = 0.5) +
+      geom_line(aes(x = year, y = annMean)) +
+      labs(x = "Year", y = ylab) +
+      theme_bw()
+  }
   
   return(p)
 }
