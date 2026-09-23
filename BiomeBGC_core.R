@@ -71,8 +71,8 @@ defineModule(sim, list(
     ),
     expectsInput(
       objectName = "pixelGroupParameters", objectClass = "data.frame",
-      desc = paste("Optional. A table of BiomeBGC parameter for each pixel group.
-                    Only used for plotting purposes.")
+      desc = paste("Optional. A table with pixelGroup, dominantSpecies and climatePolygon",
+                   "columns, used only by OutputTrendPlot() for plot faceting/coloring.")
     ),
     expectsInput(
       objectName = "pixelGroupMap", objectClass = "SpatRaster",
@@ -209,18 +209,29 @@ Init <- function(sim) {
   
   createBGCdirs(sim)
   
+  # pixelGroup identity comes from the names of the ini lists themselves.
+  # Assert they agree before relying on them.
+  if (is.null(names(sim$bbgcSpinup.ini)) || is.null(names(sim$bbgc.ini)) ||
+      anyNA(names(sim$bbgcSpinup.ini)) || anyNA(names(sim$bbgc.ini))) {
+    stop("sim$bbgc.ini and sim$bbgcSpinup.ini must be named lists (names = pixelGroup id).")
+  }
+  if (!identical(names(sim$bbgcSpinup.ini), names(sim$bbgc.ini))) {
+    stop("names(sim$bbgcSpinup.ini) and names(sim$bbgc.ini) must match exactly ",
+         "(same pixelGroup ids, same order).")
+  }
+
   # paths to the spinup ini files
   spinupIniPaths <- file.path(
     bbgcPath,
     "inputs" ,
     "ini",
-    paste0(sim$pixelGroupParameters$pixelGroup, "_spinup.ini")
+    paste0(names(sim$bbgcSpinup.ini), "_spinup.ini")
   )
   # paths to the main simulation ini files
   iniPaths <- file.path(bbgcPath,
                         "inputs" ,
                         "ini",
-                        paste0(sim$pixelGroupParameters$pixelGroup, ".ini"))
+                        paste0(names(sim$bbgc.ini), ".ini"))
   
   # determine the number of cores to use
   n_pixelGroups <- length(iniPaths)
@@ -343,7 +354,7 @@ createBGCdirs <- function(sim) {
   lapply(seq_len(nPixelGroups), function(pixelGroup_i){
     # Copy ini file into input directory
     ini <- sim$bbgc.ini[[pixelGroup_i]]
-    pixelGroupName <- sim$pixelGroupParameters$pixelGroup[pixelGroup_i]
+    pixelGroupName <- names(sim$bbgc.ini)[pixelGroup_i]
     fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroupName, ".ini"))
     iniWrite(ini, fileName = fileName)
     # Copy spinup ini file into input directory
@@ -483,9 +494,15 @@ OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
 }
 
 OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
-  # get the variables of interest and the dominant species
-  dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
-                         sim$pixelGroupParameters[, .(pixelGroup, dominantSpecies, climatePolygon)])
+  hasPixelGroupParameters <- !is.null(sim$pixelGroupParameters)
+  
+  # get the variables of interest and, if available, the dominant species/climate polygon
+  if (hasPixelGroupParameters) {
+    dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
+                           sim$pixelGroupParameters[, .(pixelGroup, dominantSpecies, climatePolygon)])
+  } else {
+    dt <- sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)]
+  }
   
   # expand the data table by converting pixelGroup to pixels
   forestedPixelGroups <- data.table(
@@ -503,15 +520,24 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
     dt[, (outputVar) := get(outputVar) * 1000 ]
   
   # calculate the across-pixel annual mean with 95% interval
-  dt <- dt[ ,.(annMean = mean(get(outputVar)), annLower95perc = quantile(get(outputVar), 0), annUpper95perc = quantile(get(outputVar), 1)), by = .(year, dominantSpecies, climatePolygon)]
+  groupingCols <- if (hasPixelGroupParameters) c("year", "dominantSpecies", "climatePolygon") else "year"
+  dt <- dt[ ,.(annMean = mean(get(outputVar)), annLower95perc = quantile(get(outputVar), 0), annUpper95perc = quantile(get(outputVar), 1)), by = groupingCols]
   
   # make the plot
-  p <- ggplot(dt) +
-    geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc, fill = dominantSpecies ), alpha = 0.5) +
-    geom_line(aes(x = year, y = annMean, color = dominantSpecies)) +
-    labs(x = "Year", y = ylab, color = "Dominant species", fill = "Dominant species") +
-    theme_bw() +
-    facet_wrap(~climatePolygon, labeller = as_labeller(function(labels) {paste0("Climate polygon: ", labels)}))
+  if (hasPixelGroupParameters) {
+    p <- ggplot(dt) +
+      geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc, fill = dominantSpecies ), alpha = 0.5) +
+      geom_line(aes(x = year, y = annMean, color = dominantSpecies)) +
+      labs(x = "Year", y = ylab, color = "Dominant species", fill = "Dominant species") +
+      theme_bw() +
+      facet_wrap(~climatePolygon, labeller = as_labeller(function(labels) {paste0("Climate polygon: ", labels)}))
+  } else {
+    p <- ggplot(dt) +
+      geom_ribbon(aes( x = year, ymin = annLower95perc, ymax = annUpper95perc ), alpha = 0.5) +
+      geom_line(aes(x = year, y = annMean)) +
+      labs(x = "Year", y = ylab) +
+      theme_bw()
+  }
   
   return(p)
 }
