@@ -68,6 +68,16 @@ defineModule(sim, list(
       desc = paste("Biome-BGC initialization files.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
+    ),
+    expectsInput(
+      objectName = "pixelGroupParameters", objectClass = "data.frame",
+      desc = paste("Optional. A table of BiomeBGC parameter for each pixel group.
+                    Only used for plotting purposes.")
+    ),
+    expectsInput(
+      objectName = "pixelGroupMap", objectClass = "SpatRaster",
+      desc = paste("Optional. A raster defining the extent, resolution, projection of the",
+                    "study area. Only used for plotting purposes.")
     )
   ),
   outputObjects = bindrows(
@@ -176,8 +186,9 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 ### template initialization
 Init <- function(sim) {
   
-  # if there are no treed-pixels, skip all events
-  if (inherits(sim$dominantSpecies, "SpatRaster") &&  all(is.na(values(sim$dominantSpecies)))) {
+  # If there are no ini files, skip all events and throw a warning
+  if (length(sim$bbgc.ini) == 0) {
+    message("There are no sites to simulate. All BiomeBGC_core events are skipped.")
     return(invisible(sim))
   }
   
@@ -511,8 +522,19 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
   
-  # ! ----- EDIT BELOW ----- ! #
+  # Biome-BGC ini file for spinup
+  if (!suppliedElsewhere('bbgcSpinup.ini', sim)) {
+    
+    stop("Biome-BGC spinup initialization file (bbgcSpinup.ini) must be provided.")
+    
+  }
   
-  # ! ----- STOP EDITING ----- ! #
+  # Biome-BGC ini file for main simulation
+  if (!suppliedElsewhere('bbgc.ini', sim)) {
+    
+    stop("Biome-BGC initialization file (bbgc.ini) must be provided.")
+    
+  }
+
   return(invisible(sim))
 }
