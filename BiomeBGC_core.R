@@ -68,25 +68,19 @@ defineModule(sim, list(
       desc = paste("Biome-BGC initialization files.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
+    ),
+    expectsInput(
+      objectName = "pixelGroupParameters", objectClass = "data.frame",
+      desc = paste("Optional. A table of BiomeBGC parameter for each pixel group.
+                    Only used for plotting purposes.")
+    ),
+    expectsInput(
+      objectName = "pixelGroupMap", objectClass = "SpatRaster",
+      desc = paste("Optional. A raster defining the extent, resolution, projection of the",
+                    "study area. Only used for plotting purposes.")
     )
   ),
   outputObjects = bindrows(
-    createsOutput(
-      objectName = "annualSummary",
-      objectClass = "data.table",
-      desc = "A summary table a fixed set of outputs for each pixelGroup and year.",
-      columns = c(
-        pixelGroup = "The site/pixelGroup Id",
-        year = "Simulation year",
-        prcp = "annual total precipitation (mm/yr)",
-        tavg = "annual average air temperature (deg C)",
-        LAI = "annual maximum value of projected leaf area index (m2/m2)",
-        ET = "annual total evapotranspiration (mm/yr)",
-        OF = "annual total outflow (mm/yr)",
-        NPP = "annual total net primary production (gC/m2/yr)",
-        NBP = "annual total net biome production (gC/m2/yr)"
-      )
-    ),
     createsOutput(
       objectName = "dailyOutput",
       objectClass = "data.table",
@@ -162,35 +156,6 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
                            types = "png")
       }
       
-      # if("daily_nep" %in% names(sim$annualAverages)){
-      #   NEPtrend <- OutputTrendPlot(sim, "daily_nep", annualSum = TRUE, ylab = "NEP (gC/m2/yr)")
-      #   SpaDES.core::Plots(NEPtrend,
-      #                      filename = "NEPtrend",
-      #                      path = figPath,
-      #                      ggsaveArgs = list(width = 10, height = 7, units = "in", dpi = 300),
-      #                      types = "png")
-      #
-      #   NEPstart <- OutputRaster(sim, start(sim), "daily_nep", annualSum = TRUE)
-      #   LandscapeAvg <- round(mean(values(NEPstart, na.rm = TRUE)), 2)
-      #   SpaDES.core::Plots(NEPstart,
-      #                      filename = "NEPstart",
-      #                      fn = terra::plot,
-      #                      main = paste0("Landscape average NEP for year ", start(sim), ": ", LandscapeAvg, " gC/m2/yr"),
-      #                      path = figPath,
-      #                      deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
-      #                      types = "png")
-      #
-      #   NEPend <- OutputRaster(sim, end(sim), "daily_nep", annualSum = TRUE)
-      #   LandscapeAvg <- round(mean(values(NEPend, na.rm = TRUE)), 2)
-      #   SpaDES.core::Plots(NEPend,
-      #                      filename = "NEPend",
-      #                      main = paste0("Landscape average NEP for year ", end(sim), ": ", LandscapeAvg, " gC/m2/yr"),
-      #                      path = figPath,
-      #                      deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
-      #                      types = "png")
-      #
-      # }
-      
     },
     save = {
       
@@ -221,8 +186,9 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 ### template initialization
 Init <- function(sim) {
   
-  # if there are no treed-pixels, skip all events
-  if (inherits(sim$dominantSpecies, "SpatRaster") &&  all(is.na(values(sim$dominantSpecies)))) {
+  # If there are no ini files, skip all events and throw a warning
+  if (length(sim$bbgc.ini) == 0) {
+    message("There are no sites to simulate. All BiomeBGC_core events are skipped.")
     return(invisible(sim))
   }
   
@@ -490,22 +456,6 @@ readAnnualAverages <- function(res){
   return(annAvg)
 }
 
-
-readAnnualSummary <- function(ini, path){
-  
-  # Get column names
-  colNames <- c("year", "prcp", "tavg", "LAI", "ET", "OF", "NPP", "NPB")
-  
-  # Get annual output file location
-  annualOutputFile <- paste0(iniGet(ini, "OUTPUT_CONTROL", 1), "_ann.txt")
-  
-  # Read annual output file
-  annualOutput <- read.table(file.path(path, annualOutputFile), header = FALSE, col.names = colNames, skip = 10)
-  
-  return(annualOutput)
-}
-
-
 purgeBGCdirs <- function(path){
   unlink(file.path(path, "outputs"), recursive=TRUE)
   unlink(file.path(path, "inputs"), recursive=TRUE)
@@ -572,8 +522,19 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
   
-  # ! ----- EDIT BELOW ----- ! #
+  # Biome-BGC ini file for spinup
+  if (!suppliedElsewhere('bbgcSpinup.ini', sim)) {
+    
+    stop("Biome-BGC spinup initialization file (bbgcSpinup.ini) must be provided.")
+    
+  }
   
-  # ! ----- STOP EDITING ----- ! #
+  # Biome-BGC ini file for main simulation
+  if (!suppliedElsewhere('bbgc.ini', sim)) {
+    
+    stop("Biome-BGC initialization file (bbgc.ini) must be provided.")
+    
+  }
+
   return(invisible(sim))
 }
