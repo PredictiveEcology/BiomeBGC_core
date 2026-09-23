@@ -59,22 +59,23 @@ Write what is saved.
 Input data are Biome-BGC's ini inputs for the spinup and simulation. These can be prepared by another module (e.g., `BiomeBGC_dataPrep`) or read in with the function `BiomeBGCR::iniRead()`. If reading in ini files, make sure the other input files (e.g., ecophysiological constants, meteorological data, etc.) are in the project folder.
 
 
-|objectName     |objectClass |desc                                                                                                                                               |sourceURL |
-|:--------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-|bbgcSpinup.ini |character   |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
-|bbgc.ini       |character   |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
+|objectName           |objectClass |desc                                                                                                                                               |sourceURL |
+|:--------------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
+|bbgcSpinup.ini       |character   |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
+|bbgc.ini             |character   |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
+|pixelGroupParameters |data.frame  |Optional. A table of BiomeBGC parameter for each pixel group. Only used for plotting purposes.                                                     |NA        |
+|pixelGroupMap        |SpatRaster  |Optional. A raster defining the extent, resolution, projection of the study area. Only used for plotting purposes.                                 |NA        |
 
 ## Output data
 
 Description of the module outputs.
 
 
-|objectName      |objectClass |desc                                                                                                                                                                                                     |columns      |
-|:---------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------|
-|annualSummary   |data.table  |A summary table a fixed set of outputs for each pixelGroup and year.                                                                                                                                     |The site.... |
-|dailyOutput     |data.table  |The ouput variables for each pixelGroup and day. The units can be find here: https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h |             |
-|monthlyAverages |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |             |
-|annualAverages  |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |             |
+|objectName      |objectClass |desc                                                                                                                                                                                                     |
+|:---------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|dailyOutput     |data.table  |The ouput variables for each pixelGroup and day. The units can be find here: https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h |
+|monthlyAverages |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |
+|annualAverages  |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |
 
 # Links to other modules
 

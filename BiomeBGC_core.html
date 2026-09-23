@@ -544,9 +544,9 @@ the other input files (e.g., ecophysiological constants, meteorological
 data, etc.) are in the project folder.</p>
 <table>
 <colgroup>
-<col width="8%" />
+<col width="11%" />
 <col width="6%" />
-<col width="79%" />
+<col width="77%" />
 <col width="5%" />
 </colgroup>
 <thead>
@@ -574,6 +574,20 @@ returned by <code>BiomeBGCR::iniRead()</code>, one per pixelGroup, named
 by pixelGroup id</td>
 <td align="left">NA</td>
 </tr>
+<tr class="odd">
+<td align="left">pixelGroupParameters</td>
+<td align="left">data.frame</td>
+<td align="left">Optional. A table of BiomeBGC parameter for each pixel
+group. Only used for plotting purposes.</td>
+<td align="left">NA</td>
+</tr>
+<tr class="even">
+<td align="left">pixelGroupMap</td>
+<td align="left">SpatRaster</td>
+<td align="left">Optional. A raster defining the extent, resolution,
+projection of the study area. Only used for plotting purposes.</td>
+<td align="left">NA</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -583,46 +597,34 @@ by pixelGroup id</td>
 <table>
 <colgroup>
 <col width="6%" />
-<col width="4%" />
-<col width="83%" />
 <col width="5%" />
+<col width="87%" />
 </colgroup>
 <thead>
 <tr class="header">
 <th align="left">objectName</th>
 <th align="left">objectClass</th>
 <th align="left">desc</th>
-<th align="left">columns</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">annualSummary</td>
-<td align="left">data.table</td>
-<td align="left">A summary table a fixed set of outputs for each
-pixelGroup and year.</td>
-<td align="left">The site….</td>
-</tr>
-<tr class="even">
 <td align="left">dailyOutput</td>
 <td align="left">data.table</td>
 <td align="left">The ouput variables for each pixelGroup and day. The
 units can be find here: <a href="https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h" class="uri">https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h</a></td>
-<td align="left"></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">monthlyAverages</td>
 <td align="left">data.table</td>
 <td align="left">The daily output variables averaged for each month. The
 same units than the dailyOutput.</td>
-<td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">annualAverages</td>
 <td align="left">data.table</td>
 <td align="left">The daily output variables averaged for each month. The
 same units than the dailyOutput.</td>
-<td align="left"></td>
 </tr>
 </tbody>
 </table>
