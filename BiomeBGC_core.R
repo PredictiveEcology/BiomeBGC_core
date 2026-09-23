@@ -71,8 +71,11 @@ defineModule(sim, list(
     ),
     expectsInput(
       objectName = "pixelGroupParameters", objectClass = "data.frame",
-      desc = paste("Optional. A table of BiomeBGC parameter for each pixel group.
-                    Only used for plotting purposes.")
+      desc = paste("Optional. A table with pixelGroup, dominantSpecies and climatePolygon",
+                   "columns, used only by OutputTrendPlot() for plot faceting/coloring.",
+                   "Not required to run the simulation: bbgc.ini/bbgcSpinup.ini list",
+                   "elements are named by pixelGroup id and are the source of truth for",
+                   "pixelGroup identity.")
     ),
     expectsInput(
       objectName = "pixelGroupMap", objectClass = "SpatRaster",
@@ -209,18 +212,30 @@ Init <- function(sim) {
   
   createBGCdirs(sim)
   
+  # pixelGroup identity comes from the names of the ini lists themselves
+  # (bbgc.ini/bbgcSpinup.ini are named lists keyed by pixelGroup id, set upstream
+  # in BiomeBGC_dataPrep). Assert they agree before relying on them.
+  if (is.null(names(sim$bbgcSpinup.ini)) || is.null(names(sim$bbgc.ini)) ||
+      anyNA(names(sim$bbgcSpinup.ini)) || anyNA(names(sim$bbgc.ini))) {
+    stop("sim$bbgc.ini and sim$bbgcSpinup.ini must be named lists (names = pixelGroup id).")
+  }
+  if (!identical(names(sim$bbgcSpinup.ini), names(sim$bbgc.ini))) {
+    stop("names(sim$bbgcSpinup.ini) and names(sim$bbgc.ini) must match exactly ",
+         "(same pixelGroup ids, same order).")
+  }
+
   # paths to the spinup ini files
   spinupIniPaths <- file.path(
     bbgcPath,
     "inputs" ,
     "ini",
-    paste0(sim$pixelGroupParameters$pixelGroup, "_spinup.ini")
+    paste0(names(sim$bbgcSpinup.ini), "_spinup.ini")
   )
   # paths to the main simulation ini files
   iniPaths <- file.path(bbgcPath,
                         "inputs" ,
                         "ini",
-                        paste0(sim$pixelGroupParameters$pixelGroup, ".ini"))
+                        paste0(names(sim$bbgc.ini), ".ini"))
   
   # determine the number of cores to use
   n_pixelGroups <- length(iniPaths)
@@ -343,7 +358,7 @@ createBGCdirs <- function(sim) {
   lapply(seq_len(nPixelGroups), function(pixelGroup_i){
     # Copy ini file into input directory
     ini <- sim$bbgc.ini[[pixelGroup_i]]
-    pixelGroupName <- sim$pixelGroupParameters$pixelGroup[pixelGroup_i]
+    pixelGroupName <- names(sim$bbgc.ini)[pixelGroup_i]
     fileName <- file.path(bbgcPath, "inputs" ,"ini", paste0(pixelGroupName, ".ini"))
     iniWrite(ini, fileName = fileName)
     # Copy spinup ini file into input directory
@@ -483,6 +498,10 @@ OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
 }
 
 OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
+  if (is.null(sim$pixelGroupParameters)) {
+    stop("OutputTrendPlot() requires sim$pixelGroupParameters ",
+         "(columns: pixelGroup, dominantSpecies, climatePolygon) for plot faceting/coloring.")
+  }
   # get the variables of interest and the dominant species
   dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
                          sim$pixelGroupParameters[, .(pixelGroup, dominantSpecies, climatePolygon)])

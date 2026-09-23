@@ -25,10 +25,7 @@ test_that("BiomeBGC_core: multi-site example run (Boisvenue 2010, 6 sites)", {
     ),
     objects = list(
       bbgcSpinup.ini = ini$bbgcSpinup.ini,
-      bbgc.ini = ini$bbgc.ini,
-      pixelGroupParameters = data.table::data.table(
-        pixelGroup = seq_len(nSites)
-      )
+      bbgc.ini = ini$bbgc.ini
     )
   )
 

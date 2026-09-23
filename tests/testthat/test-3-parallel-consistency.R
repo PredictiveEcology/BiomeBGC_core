@@ -31,8 +31,7 @@ test_that("BiomeBGC_core: parallel and sequential runs agree (Boisvenue 2010, 6 
     )),
     objects = list(
       bbgcSpinup.ini       = ini$bbgcSpinup.ini,
-      bbgc.ini             = ini$bbgc.ini,
-      pixelGroupParameters = data.table::data.table(pixelGroup = seq_len(nSites))
+      bbgc.ini             = ini$bbgc.ini
     )
   )
 

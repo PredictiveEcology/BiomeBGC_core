@@ -23,8 +23,7 @@ test_that("BiomeBGC_core: single-site example run (Missoula, enf_test1)", {
     ),
     objects = list(
       bbgcSpinup.ini = ini,
-      bbgc.ini = ini,
-      pixelGroupParameters = data.table::data.table(pixelGroup = 1)
+      bbgc.ini = ini
     )
   )
 
