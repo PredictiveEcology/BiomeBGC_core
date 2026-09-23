@@ -72,22 +72,6 @@ defineModule(sim, list(
   ),
   outputObjects = bindrows(
     createsOutput(
-      objectName = "annualSummary",
-      objectClass = "data.table",
-      desc = "A summary table a fixed set of outputs for each pixelGroup and year.",
-      columns = c(
-        pixelGroup = "The site/pixelGroup Id",
-        year = "Simulation year",
-        prcp = "annual total precipitation (mm/yr)",
-        tavg = "annual average air temperature (deg C)",
-        LAI = "annual maximum value of projected leaf area index (m2/m2)",
-        ET = "annual total evapotranspiration (mm/yr)",
-        OF = "annual total outflow (mm/yr)",
-        NPP = "annual total net primary production (gC/m2/yr)",
-        NBP = "annual total net biome production (gC/m2/yr)"
-      )
-    ),
-    createsOutput(
       objectName = "dailyOutput",
       objectClass = "data.table",
       desc = paste(
@@ -161,35 +145,6 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
                            deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
                            types = "png")
       }
-      
-      # if("daily_nep" %in% names(sim$annualAverages)){
-      #   NEPtrend <- OutputTrendPlot(sim, "daily_nep", annualSum = TRUE, ylab = "NEP (gC/m2/yr)")
-      #   SpaDES.core::Plots(NEPtrend,
-      #                      filename = "NEPtrend",
-      #                      path = figPath,
-      #                      ggsaveArgs = list(width = 10, height = 7, units = "in", dpi = 300),
-      #                      types = "png")
-      #
-      #   NEPstart <- OutputRaster(sim, start(sim), "daily_nep", annualSum = TRUE)
-      #   LandscapeAvg <- round(mean(values(NEPstart, na.rm = TRUE)), 2)
-      #   SpaDES.core::Plots(NEPstart,
-      #                      filename = "NEPstart",
-      #                      fn = terra::plot,
-      #                      main = paste0("Landscape average NEP for year ", start(sim), ": ", LandscapeAvg, " gC/m2/yr"),
-      #                      path = figPath,
-      #                      deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
-      #                      types = "png")
-      #
-      #   NEPend <- OutputRaster(sim, end(sim), "daily_nep", annualSum = TRUE)
-      #   LandscapeAvg <- round(mean(values(NEPend, na.rm = TRUE)), 2)
-      #   SpaDES.core::Plots(NEPend,
-      #                      filename = "NEPend",
-      #                      main = paste0("Landscape average NEP for year ", end(sim), ": ", LandscapeAvg, " gC/m2/yr"),
-      #                      path = figPath,
-      #                      deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
-      #                      types = "png")
-      #
-      # }
       
     },
     save = {
@@ -489,22 +444,6 @@ readAnnualAverages <- function(res){
   )
   return(annAvg)
 }
-
-
-readAnnualSummary <- function(ini, path){
-  
-  # Get column names
-  colNames <- c("year", "prcp", "tavg", "LAI", "ET", "OF", "NPP", "NPB")
-  
-  # Get annual output file location
-  annualOutputFile <- paste0(iniGet(ini, "OUTPUT_CONTROL", 1), "_ann.txt")
-  
-  # Read annual output file
-  annualOutput <- read.table(file.path(path, annualOutputFile), header = FALSE, col.names = colNames, skip = 10)
-  
-  return(annualOutput)
-}
-
 
 purgeBGCdirs <- function(path){
   unlink(file.path(path, "outputs"), recursive=TRUE)
