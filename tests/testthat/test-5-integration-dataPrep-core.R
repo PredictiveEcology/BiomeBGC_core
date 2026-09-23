@@ -15,8 +15,6 @@ testthat::skip_if_not_installed("SpaDES.project")
 test_that("BiomeBGC_dataPrep + BiomeBGC_core run end-to-end for a point studyArea (single pixelGroup)", {
   requireNamespace("SpaDES.core", quietly = TRUE)
 
-  testthat::skip_on_ci()
-
   # Set up project
   projectName <- "integration_dataPrep-core_point"
   mocks <- makeMockPointInputs()
@@ -96,8 +94,6 @@ test_that("BiomeBGC_dataPrep + BiomeBGC_core run end-to-end for a point studyAre
 
 test_that("BiomeBGC_dataPrep + BiomeBGC_core run end-to-end for a polygon studyArea (multiple pixelGroups)", {
   requireNamespace("SpaDES.core", quietly = TRUE)
-
-  testthat::skip_on_ci()
 
   # Set up project
   projectName <- "integration_dataPrep-core_polygon"
