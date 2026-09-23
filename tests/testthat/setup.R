@@ -12,7 +12,8 @@ suppressPackageStartupMessages({
 ## example .ini/.epc/.met/.co2 fixtures used by these tests) are available.
 withr::with_options(c(timeout = 600), Require::Install(
   unique(c(
-    SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]]#,
+    SpaDES.core::packages(modules = "BiomeBGC_core", paths = "../..")[[1]],
+    "SpaDES.project"
   )),
   repos = unique(c("predictiveecology.r-universe.dev", getOption("repos")))
 ))
