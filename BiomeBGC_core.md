@@ -63,7 +63,7 @@ Input data are Biome-BGC's ini inputs for the spinup and simulation. These can b
 |:--------------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
 |bbgcSpinup.ini       |character   |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
 |bbgc.ini             |character   |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
-|pixelGroupParameters |data.frame  |Optional. A table of BiomeBGC parameter for each pixel group. Only used for plotting purposes.                                                     |NA        |
+|pixelGroupParameters |data.frame  |Optional. A table with pixelGroup, dominantSpecies and climatePolygon columns, used only by OutputTrendPlot() for plot faceting/coloring.          |NA        |
 |pixelGroupMap        |SpatRaster  |Optional. A raster defining the extent, resolution, projection of the study area. Only used for plotting purposes.                                 |NA        |
 
 ## Output data
