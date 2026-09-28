@@ -245,15 +245,10 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    # Rebind run_parallel_sims (and the functions it dispatches to workers) to
-    # globalenv() before calling it. 
-    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
-                         "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
-    for (fnName in parallelFnNames) {
-      fn <- get(fnName, envir = environment(Init))
-      environment(fn) <- globalenv()
-      assign(fnName, fn, envir = globalenv())
-    }
+    # run_parallel_sims() and the functions it dispatches to workers
+    # (simulation_worker(), runPixelGroupSimulation(), the read*Output()/
+    # read*Averages() helpers) are all defined in R/parallel_utils.R and
+    # BiomeBGC_core.R.
     res <- run_parallel_sims(
       spinup_chunks = spinup_chunks,
       argv = argv,
@@ -272,7 +267,7 @@ Init <- function(sim) {
     if(P(sim)$returnMonthlyEstimates){
       sim$monthlyAverages <- rbindlist(lapply(res, function(x)
         rbindlist(lapply(x, `[[`, "monthly"))))
-      setorder(sim$monthlyAverages$pixelGroup, pixelGroup, year, month)
+      setorder(sim$monthlyAverages, pixelGroup, year, month)
       
     }
     sim$annualAverages <- rbindlist(lapply(res, function(x)
