@@ -27,6 +27,10 @@ defineModule(sim, list(
                     "Path to base directory to use for simulations."),
     defineParameter("bbgcInputPath", "character", inputPath(sim), NA, NA,
                     "Path to the Biome-BGC input directory."),
+    defineParameter("purgeBGCdirs", "logical", TRUE, NA, NA,
+                    "If TRUE (default), delete the 'inputs' and 'outputs' subfolders under",
+                    "bbgcPath at the end of Init(). Set to FALSE to keep them for inspection",
+                    "(e.g., when using a custom, non-temporary bbgcPath)."),
     defineParameter("returnDailyEstimates", "logical", TRUE, NA, NA,
                     "Controls whether dailyOutput object is returned by the simulation."),
     defineParameter("returnMonthlyEstimates", "logical", TRUE, NA, NA,
@@ -303,7 +307,9 @@ Init <- function(sim) {
     
   }
   
-  purgeBGCdirs(bbgcPath)
+  if (P(sim)$purgeBGCdirs) {
+    purgeBGCdirs(bbgcPath)
+  }
   
   return(invisible(sim))
 }
@@ -543,3 +549,4 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
 
   return(invisible(sim))
 }
+
