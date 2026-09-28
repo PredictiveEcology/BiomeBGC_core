@@ -22,23 +22,24 @@ Runs Biome-BGC version 4.2 through the R package `PredictiveEcology/BiomeBGCR`.
 Provide a summary of user-visible parameters.
 
 
-|paramName              |paramClass |default      |min |max |paramDesc                                                                                                                  |
-|:----------------------|:----------|:------------|:---|:---|:--------------------------------------------------------------------------------------------------------------------------|
-|argv                   |character  |-v3          |NA  |NA  |Arguments for the BiomeBGC library (same as 'bgc' commandline application).                                                |
-|bbgcPath               |character  |/tmp/Rtm.... |NA  |NA  |Path to base directory to use for simulations.                                                                             |
-|bbgcInputPath          |character  |/tmp/Rtm.... |NA  |NA  |Path to the Biome-BGC input directory.                                                                                     |
-|returnDailyEstimates   |logical    |TRUE         |NA  |NA  |Controls whether dailyOutput object is returned by the simulation.                                                         |
-|returnMonthlyEstimates |logical    |TRUE         |NA  |NA  |Controls whether monthlyAverages object is returned by the simulation.                                                     |
-|parallel.cores         |integer    |1            |1   |NA  |Number of cores used to execute the simulation                                                                             |
-|saveYears              |numeric    |NA           |NA  |NA  |Controls the years for which the output variables are saved.                                                               |
-|.plots                 |character  |screen       |NA  |NA  |Used by Plots function, which can be optionally used here                                                                  |
-|.plotInitialTime       |numeric    |0            |NA  |NA  |Describes the simulation time at which the first plot event should occur.                                                  |
-|.plotInterval          |numeric    |NA           |NA  |NA  |Describes the simulation time interval between plot events.                                                                |
-|.saveInitialTime       |numeric    |NA           |NA  |NA  |Describes the simulation time at which the first save event should occur.                                                  |
-|.saveInterval          |numeric    |NA           |NA  |NA  |This describes the simulation time interval between save events.                                                           |
-|.studyAreaName         |character  |NA           |NA  |NA  |Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()` |
-|.seed                  |list       |             |NA  |NA  |Named list of seeds to use for each event (names).                                                                         |
-|.useCache              |logical    |FALSE        |NA  |NA  |Should caching of events or module be used?                                                                                |
+|paramName              |paramClass |default      |min |max |paramDesc                                                                                                                                                                                        |
+|:----------------------|:----------|:------------|:---|:---|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|argv                   |character  |-v3          |NA  |NA  |Arguments for the BiomeBGC library (same as 'bgc' commandline application).                                                                                                                      |
+|bbgcPath               |character  |/tmp/Rtm.... |NA  |NA  |Path to base directory to use for simulations.                                                                                                                                                   |
+|bbgcInputPath          |character  |/tmp/Rtm.... |NA  |NA  |Path to the Biome-BGC input directory.                                                                                                                                                           |
+|purgeBGCdirs           |logical    |TRUE         |NA  |NA  |If TRUE (default), delete the 'inputs' and 'outputs' subfolders underbbgcPath at the end of Init(). Set to FALSE to keep them for inspection(e.g., when using a custom, non-temporary bbgcPath). |
+|returnDailyEstimates   |logical    |TRUE         |NA  |NA  |Controls whether dailyOutput object is returned by the simulation.                                                                                                                               |
+|returnMonthlyEstimates |logical    |TRUE         |NA  |NA  |Controls whether monthlyAverages object is returned by the simulation.                                                                                                                           |
+|parallel.cores         |integer    |1            |1   |NA  |Number of cores used to execute the simulation                                                                                                                                                   |
+|saveYears              |numeric    |NA           |NA  |NA  |Controls the years for which the output variables are saved.                                                                                                                                     |
+|.plots                 |character  |screen       |NA  |NA  |Used by Plots function, which can be optionally used here                                                                                                                                        |
+|.plotInitialTime       |numeric    |0            |NA  |NA  |Describes the simulation time at which the first plot event should occur.                                                                                                                        |
+|.plotInterval          |numeric    |NA           |NA  |NA  |Describes the simulation time interval between plot events.                                                                                                                                      |
+|.saveInitialTime       |numeric    |NA           |NA  |NA  |Describes the simulation time at which the first save event should occur.                                                                                                                        |
+|.saveInterval          |numeric    |NA           |NA  |NA  |This describes the simulation time interval between save events.                                                                                                                                 |
+|.studyAreaName         |character  |NA           |NA  |NA  |Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()`                                                                       |
+|.seed                  |list       |             |NA  |NA  |Named list of seeds to use for each event (names).                                                                                                                                               |
+|.useCache              |logical    |FALSE        |NA  |NA  |Should caching of events or module be used?                                                                                                                                                      |
 
 # Events
 
@@ -61,8 +62,8 @@ Input data are Biome-BGC's ini inputs for the spinup and simulation. These can b
 
 |objectName           |objectClass |desc                                                                                                                                               |sourceURL |
 |:--------------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-|bbgcSpinup.ini       |character   |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
-|bbgc.ini             |character   |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
+|bbgcSpinup.ini       |list        |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
+|bbgc.ini             |list        |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
 |pixelGroupParameters |data.frame  |Optional. A table with pixelGroup, dominantSpecies and climatePolygon columns, used only by OutputTrendPlot() for plot faceting/coloring.          |NA        |
 |pixelGroupMap        |SpatRaster  |Optional. A raster defining the extent, resolution, projection of the study area. Only used for plotting purposes.                                 |NA        |
 
