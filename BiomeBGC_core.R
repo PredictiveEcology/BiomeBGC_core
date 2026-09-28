@@ -247,8 +247,8 @@ Init <- function(sim) {
     readMonthly <- P(sim)$returnMonthlyEstimates
     # Rebind run_parallel_sims (and the functions it dispatches to workers) to
     # globalenv() before calling it. 
-    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "readDailyOutput",
-                         "readMonthlyAverages", "readAnnualAverages")
+    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
+                         "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
     for (fnName in parallelFnNames) {
       fn <- get(fnName, envir = environment(Init))
       environment(fn) <- globalenv()
@@ -280,47 +280,31 @@ Init <- function(sim) {
     setorder(sim$annualAverages, pixelGroup, year)
     
   } else {
-    # Run the spinup
-    res <- lapply(spinupIniPaths, function(iniPath) {
-      message("Running the spinup for pixelGroup ", which(iniPath == spinupIniPaths), " of ", length(spinupIniPaths))
-      
-      log <- capture.output({
-        resi <- bgcExecuteSpinup(argv = argv,
-                                 iniFiles = iniPath,
-                                 path = bbgcPath)
-      })
-      
-      if (resi[[1]] != 0) stop("Spinup error.")
-      
-      return(resi[[2]][[1]])
+    pixelGroupNames <- as.numeric(names(sim$bbgc.ini))
+    res <- lapply(seq_along(iniPaths), function(i) {
+      message("Running pixelGroup ", i, " of ", length(iniPaths))
+      runPixelGroupSimulation(
+        pixelGroupName = pixelGroupNames[i],
+        spinupIniPath = spinupIniPaths[i],
+        iniPath = iniPaths[i],
+        argv = argv,
+        bbgcPath = bbgcPath,
+        readDaily = P(sim)$returnDailyEstimates,
+        readMonthly = P(sim)$returnMonthlyEstimates,
+        readAnnual = TRUE
+      )
     })
-    
-    # Run the main simulation
-    res <- lapply(iniPaths, function(iniPath) {
-      
-      message("Running simulation for pixelGroup ", which(iniPath == iniPaths), " of ", length(iniPaths))
-      
-      # Run simulation and silence the messaging
-      resi <- bgcExecute(argv, iniPath, bbgcPath)
-      
-      if (resi[[1]] != 0)
-        stop("Simulation error.")
-      
-      return(resi[[2]][[1]])
-    })
-    
-    # Read the outputs
-    message("Reading the output files.")
-    if(P(sim)$returnDailyEstimates){
-      sim$dailyOutput <- lapply(res, readDailyOutput) |> rbindlist(idcol = "pixelGroup")
-      sim$dailyOutput$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$dailyOutput$pixelGroup]
+
+    if (P(sim)$returnDailyEstimates) {
+      sim$dailyOutput <- rbindlist(lapply(res, `[[`, "daily"))
+      setorder(sim$dailyOutput, pixelGroup, year, day)
     }
-    if(P(sim)$returnMonthlyEstimates){
-      sim$monthlyAverages <- lapply(res, readMonthlyAverages) |> rbindlist(idcol = "pixelGroup")
-      sim$monthlyAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$monthlyAverages$pixelGroup]
+    if (P(sim)$returnMonthlyEstimates) {
+      sim$monthlyAverages <- rbindlist(lapply(res, `[[`, "monthly"))
+      setorder(sim$monthlyAverages, pixelGroup, year, month)
     }
-    sim$annualAverages <- lapply(res, readAnnualAverages) |> rbindlist(idcol = "pixelGroup")
-    sim$annualAverages$pixelGroup <- as.numeric(names(sim$bbgc.ini))[sim$annualAverages$pixelGroup]
+    sim$annualAverages <- rbindlist(lapply(res, `[[`, "annual"))
+    setorder(sim$annualAverages, pixelGroup, year)
     
   }
   
