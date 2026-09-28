@@ -61,14 +61,14 @@ defineModule(sim, list(
   inputObjects = bindrows(
     expectsInput(
       objectName = "bbgcSpinup.ini",
-      objectClass = "character",
+      objectClass = "list",
       desc = paste("Biome-BGC initialization files for the spinup.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
     ),
     expectsInput(
       objectName = "bbgc.ini",
-      objectClass = "character",
+      objectClass = "list",
       desc = paste("Biome-BGC initialization files.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
@@ -223,6 +223,11 @@ Init <- function(sim) {
     stop("names(sim$bbgcSpinup.ini) and names(sim$bbgc.ini) must match exactly ",
          "(same pixelGroup ids, same order).")
   }
+
+  # Structural sanity check
+  requiredIniSections <- c("MET_INPUT", "RESTART", "TIME_DEFINE", "CO2_CONTROL", "SITE", "RAMP_NDEP", "EPC_FILE", "W_STATE", "C_STATE", "N_STATE")
+  checkIniStructure(sim$bbgcSpinup.ini, "bbgcSpinup.ini", requiredIniSections)
+  checkIniStructure(sim$bbgc.ini, "bbgc.ini", requiredIniSections)
 
   # paths to the spinup ini files
   spinupIniPaths <- file.path(
@@ -455,6 +460,21 @@ readAnnualAverages <- function(res){
 purgeBGCdirs <- function(path){
   unlink(file.path(path, "outputs"), recursive=TRUE)
   unlink(file.path(path, "inputs"), recursive=TRUE)
+}
+
+## Verify `ini` list actually holds parsed ini objects: a list of data.frames, one
+## per ini section), rather than some other list that merely passed the presence/naming checks.
+checkIniStructure <- function(iniList, objName, requiredSections) {
+  for (i in seq_along(iniList)) {
+    ini <- iniList[[i]]
+    pixelGroupName <- names(iniList)[i]
+    if (!is.list(ini) || !all(requiredSections %in% names(ini))) {
+      stop("sim$", objName, "[[\"", pixelGroupName, "\"]] does not look like a parsed ",
+           "Biome-BGC ini object (as returned by BiomeBGCR::iniRead()): missing section(s) ",
+           paste(setdiff(requiredSections, names(ini)), collapse = ", "), ".")
+    }
+  }
+  invisible(TRUE)
 }
 
 OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
