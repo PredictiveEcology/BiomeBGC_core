@@ -64,11 +64,6 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
 
 
 # Dispatch simulation_worker() calls to a multisession future cluster.
-#
-# This is a standalone wrapper (rather than inlining plan()/future_lapply()
-# directly in Init()) so that its own environment() can be rebound to
-# globalenv() before it is called. Rebinding this function's environment to globalenv()
-# keeps the calling frame's lexical parent out of that namespace.
 run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMonthly,
                                n_cores, libPaths) {
   future::plan(future::multisession, workers = n_cores, rscript_libs = libPaths)

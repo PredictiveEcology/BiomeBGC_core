@@ -27,6 +27,10 @@ defineModule(sim, list(
                     "Path to base directory to use for simulations."),
     defineParameter("bbgcInputPath", "character", inputPath(sim), NA, NA,
                     "Path to the Biome-BGC input directory."),
+    defineParameter("purgeBGCdirs", "logical", TRUE, NA, NA,
+                    "If TRUE (default), delete the 'inputs' and 'outputs' subfolders under",
+                    "bbgcPath at the end of Init(). Set to FALSE to keep them for inspection",
+                    "(e.g., when using a custom, non-temporary bbgcPath)."),
     defineParameter("returnDailyEstimates", "logical", TRUE, NA, NA,
                     "Controls whether dailyOutput object is returned by the simulation."),
     defineParameter("returnMonthlyEstimates", "logical", TRUE, NA, NA,
@@ -57,14 +61,14 @@ defineModule(sim, list(
   inputObjects = bindrows(
     expectsInput(
       objectName = "bbgcSpinup.ini",
-      objectClass = "character",
+      objectClass = "list",
       desc = paste("Biome-BGC initialization files for the spinup.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
     ),
     expectsInput(
       objectName = "bbgc.ini",
-      objectClass = "character",
+      objectClass = "list",
       desc = paste("Biome-BGC initialization files.",
                    "Parsed ini object as returned by `BiomeBGCR::iniRead()`,",
                    "one per pixelGroup, named by pixelGroup id")
@@ -220,6 +224,11 @@ Init <- function(sim) {
          "(same pixelGroup ids, same order).")
   }
 
+  # Structural sanity check
+  requiredIniSections <- c("MET_INPUT", "RESTART", "TIME_DEFINE", "CO2_CONTROL", "SITE", "RAMP_NDEP", "EPC_FILE", "W_STATE", "C_STATE", "N_STATE")
+  checkIniStructure(sim$bbgcSpinup.ini, "bbgcSpinup.ini", requiredIniSections)
+  checkIniStructure(sim$bbgc.ini, "bbgc.ini", requiredIniSections)
+
   # paths to the spinup ini files
   spinupIniPaths <- file.path(
     bbgcPath,
@@ -245,8 +254,8 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    # Rebind run_parallel_sims (and the functions it dispatches to workers) to
-    # globalenv() before calling it. 
+    # Rebind run_parallel_sims() (and the functions it dispatches to workers)
+    # to globalenv() before calling it. 
     parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
                          "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
     for (fnName in parallelFnNames) {
@@ -272,7 +281,7 @@ Init <- function(sim) {
     if(P(sim)$returnMonthlyEstimates){
       sim$monthlyAverages <- rbindlist(lapply(res, function(x)
         rbindlist(lapply(x, `[[`, "monthly"))))
-      setorder(sim$monthlyAverages$pixelGroup, pixelGroup, year, month)
+      setorder(sim$monthlyAverages, pixelGroup, year, month)
       
     }
     sim$annualAverages <- rbindlist(lapply(res, function(x)
@@ -308,7 +317,9 @@ Init <- function(sim) {
     
   }
   
-  purgeBGCdirs(bbgcPath)
+  if (P(sim)$purgeBGCdirs) {
+    purgeBGCdirs(bbgcPath)
+  }
   
   return(invisible(sim))
 }
@@ -456,6 +467,21 @@ purgeBGCdirs <- function(path){
   unlink(file.path(path, "inputs"), recursive=TRUE)
 }
 
+## Verify `ini` list actually holds parsed ini objects: a list of data.frames, one
+## per ini section), rather than some other list that merely passed the presence/naming checks.
+checkIniStructure <- function(iniList, objName, requiredSections) {
+  for (i in seq_along(iniList)) {
+    ini <- iniList[[i]]
+    pixelGroupName <- names(iniList)[i]
+    if (!is.list(ini) || !all(requiredSections %in% names(ini))) {
+      stop("sim$", objName, "[[\"", pixelGroupName, "\"]] does not look like a parsed ",
+           "Biome-BGC ini object (as returned by BiomeBGCR::iniRead()): missing section(s) ",
+           paste(setdiff(requiredSections, names(ini)), collapse = ", "), ".")
+    }
+  }
+  invisible(TRUE)
+}
+
 OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
   
   # filter the datatable to keep just the relevant year and variable
@@ -548,3 +574,4 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
 
   return(invisible(sim))
 }
+
