@@ -260,7 +260,7 @@ Init <- function(sim) {
     # worker exports; leaving them bound to the module's registered pseudo-package
     # environment makes it try (and fail) to reattach a "BiomeBGC.core" package on
     # the worker. A disposable environment avoids that error without writing into
-    # the caller's actual .GlobalEnv (as a prior version of this workaround did).
+    # the caller's actual .GlobalEnv.
     workerEnv <- new.env(parent = globalenv())
     parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
                          "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
