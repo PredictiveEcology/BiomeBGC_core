@@ -255,15 +255,21 @@ Init <- function(sim) {
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
     # Rebind run_parallel_sims() (and the functions it dispatches to workers)
-    # to globalenv() before calling it. 
+    # to a private environment (parent globalenv()) before calling it. future's
+    # globals detection resolves these functions' environment() when preparing
+    # worker exports; leaving them bound to the module's registered pseudo-package
+    # environment makes it try (and fail) to reattach a "BiomeBGC.core" package on
+    # the worker. A disposable environment avoids that error without writing into
+    # the caller's actual .GlobalEnv (as a prior version of this workaround did).
+    workerEnv <- new.env(parent = globalenv())
     parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
                          "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
     for (fnName in parallelFnNames) {
       fn <- get(fnName, envir = environment(Init))
-      environment(fn) <- globalenv()
-      assign(fnName, fn, envir = globalenv())
+      environment(fn) <- workerEnv
+      assign(fnName, fn, envir = workerEnv)
     }
-    res <- run_parallel_sims(
+    res <- get("run_parallel_sims", envir = workerEnv)(
       spinup_chunks = spinup_chunks,
       argv = argv,
       bbgcPath = bbgcPath,
