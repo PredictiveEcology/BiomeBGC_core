@@ -254,29 +254,29 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    # Rebind run_parallel_sims() (and the functions it dispatches to workers)
-    # to a private environment (parent globalenv()) before calling it. future's
-    # globals detection resolves these functions' environment() when preparing
-    # worker exports; leaving them bound to the module's registered pseudo-package
-    # environment makes it try (and fail) to reattach a "BiomeBGC.core" package on
-    # the worker. A disposable environment avoids that error without writing into
-    # the caller's actual .GlobalEnv.
-    workerEnv <- new.env(parent = globalenv())
-    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
-                         "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
-    for (fnName in parallelFnNames) {
-      fn <- get(fnName, envir = environment(Init))
-      environment(fn) <- workerEnv
-      assign(fnName, fn, envir = workerEnv)
-    }
-    res <- get("run_parallel_sims", envir = workerEnv)(
+    # run_parallel_sims() is passed the worker functions explicitly (rather than
+    # letting it resolve them by name from its own environment) so that it can, in
+    # turn, pass them to future_lapply() as a *named list* of future.globals. A
+    # named list is used by future/globals as-is; a character vector of names is
+    # instead resolved via a search that walks the real search path, and if this
+    # module has been converted to a package and attached on it (e.g. by
+    # SpaDES.core::convertToPackage() + pkgload/testthat, as in CI), that search
+    # finds the attached package's own copies of these functions and future then
+    # tries (and fails) to reattach that package on the worker, since it is not
+    # actually installed there. See R/parallel_utils.R.
+    res <- run_parallel_sims(
       spinup_chunks = spinup_chunks,
       argv = argv,
       bbgcPath = bbgcPath,
       readDaily = readDaily,
       readMonthly = readMonthly,
       n_cores = n_cores,
-      libPaths = .libPaths()
+      libPaths = .libPaths(),
+      simulation_worker = simulation_worker,
+      runPixelGroupSimulation = runPixelGroupSimulation,
+      readDailyOutput = readDailyOutput,
+      readMonthlyAverages = readMonthlyAverages,
+      readAnnualAverages = readAnnualAverages
     )
     # Read the outputs
     if(P(sim)$returnDailyEstimates){
