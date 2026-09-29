@@ -67,13 +67,7 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
 #
 # simulation_worker/runPixelGroupSimulation/read*() are taken as explicit arguments
 # (rather than resolved by name from this function's own environment) and passed to
-# future_lapply() via a *named list* for future.globals, not a character vector. A
-# character vector is resolved by future/globals via a name lookup that walks the
-# real search path; if this module has been converted to a package and attached
-# (e.g. by SpaDES.core::convertToPackage() + pkgload/testthat), that lookup finds the
-# attached package's own copies of these functions instead of the ones handed to us,
-# and future then tries (and fails) to reattach that package on the worker, since it
-# is not actually installed there. A named list is used as-is, with no such lookup.
+# future_lapply() via a *named list* for future.globals, not a character vector. 
 run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMonthly,
                                n_cores, libPaths, simulation_worker, runPixelGroupSimulation,
                                readDailyOutput, readMonthlyAverages, readAnnualAverages) {

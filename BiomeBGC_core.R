@@ -254,16 +254,8 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    # run_parallel_sims() is passed the worker functions explicitly (rather than
-    # letting it resolve them by name from its own environment) so that it can, in
-    # turn, pass them to future_lapply() as a *named list* of future.globals. A
-    # named list is used by future/globals as-is; a character vector of names is
-    # instead resolved via a search that walks the real search path, and if this
-    # module has been converted to a package and attached on it (e.g. by
-    # SpaDES.core::convertToPackage() + pkgload/testthat, as in CI), that search
-    # finds the attached package's own copies of these functions and future then
-    # tries (and fails) to reattach that package on the worker, since it is not
-    # actually installed there. See R/parallel_utils.R.
+    # run_parallel_sims() pass the worker functions explicitly so that it can, in
+    # turn, pass them to future_lapply() as a *named list* of future.globals. 
     res <- run_parallel_sims(
       spinup_chunks = spinup_chunks,
       argv = argv,
