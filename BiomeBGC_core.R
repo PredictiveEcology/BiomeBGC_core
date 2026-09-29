@@ -254,15 +254,8 @@ Init <- function(sim) {
     spinup_chunks <- split_into_chunks(spinupIniPaths, n_cores)
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
-    # Rebind run_parallel_sims() (and the functions it dispatches to workers)
-    # to globalenv() before calling it. 
-    parallelFnNames <- c("run_parallel_sims", "simulation_worker", "runPixelGroupSimulation",
-                         "readDailyOutput", "readMonthlyAverages", "readAnnualAverages")
-    for (fnName in parallelFnNames) {
-      fn <- get(fnName, envir = environment(Init))
-      environment(fn) <- globalenv()
-      assign(fnName, fn, envir = globalenv())
-    }
+    # run_parallel_sims() pass the worker functions explicitly so that it can, in
+    # turn, pass them to future_lapply() as a *named list* of future.globals. 
     res <- run_parallel_sims(
       spinup_chunks = spinup_chunks,
       argv = argv,
@@ -270,7 +263,12 @@ Init <- function(sim) {
       readDaily = readDaily,
       readMonthly = readMonthly,
       n_cores = n_cores,
-      libPaths = .libPaths()
+      libPaths = .libPaths(),
+      simulation_worker = simulation_worker,
+      runPixelGroupSimulation = runPixelGroupSimulation,
+      readDailyOutput = readDailyOutput,
+      readMonthlyAverages = readMonthlyAverages,
+      readAnnualAverages = readAnnualAverages
     )
     # Read the outputs
     if(P(sim)$returnDailyEstimates){

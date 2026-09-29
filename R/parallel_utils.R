@@ -64,8 +64,13 @@ simulation_worker <- function(spinupIniPaths, argv, bbgcPath, readDaily, readMon
 
 
 # Dispatch simulation_worker() calls to a multisession future cluster.
+#
+# simulation_worker/runPixelGroupSimulation/read*() are taken as explicit arguments
+# (rather than resolved by name from this function's own environment) and passed to
+# future_lapply() via a *named list* for future.globals, not a character vector. 
 run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMonthly,
-                               n_cores, libPaths) {
+                               n_cores, libPaths, simulation_worker, runPixelGroupSimulation,
+                               readDailyOutput, readMonthlyAverages, readAnnualAverages) {
   future::plan(future::multisession, workers = n_cores, rscript_libs = libPaths)
   on.exit(future::plan(future::sequential), add = TRUE)
 
@@ -78,16 +83,12 @@ run_parallel_sims <- function(spinup_chunks, argv, bbgcPath, readDaily, readMont
     readMonthly = readMonthly,
     readAnnual = TRUE,
     future.packages = c("BiomeBGCR", "data.table"),
-    future.globals = c(
-      "simulation_worker",
-      "runPixelGroupSimulation",
-      "argv",
-      "bbgcPath",
-      "readDaily",
-      "readMonthly",
-      "readDailyOutput",
-      "readMonthlyAverages",
-      "readAnnualAverages"
+    future.globals = list(
+      simulation_worker = simulation_worker,
+      runPixelGroupSimulation = runPixelGroupSimulation,
+      readDailyOutput = readDailyOutput,
+      readMonthlyAverages = readMonthlyAverages,
+      readAnnualAverages = readAnnualAverages
     )
   )
 }
