@@ -1,7 +1,7 @@
 ---
 title: "BiomeBGC_core Manual"
 subtitle: "v.0.0.0.9000"
-date: "Last updated: 2025-11-18"
+date: "Last updated: 2026-10-05"
 output:
   bookdown::html_document2:
     toc: true
@@ -16,223 +16,166 @@ link-citations: true
 always_allow_html: true
 ---
 
+
+
 # BiomeBGC_core Module
-
-<!-- the following are text references used in captions for LaTeX compatibility -->
-(ref:BiomeBGC-core) *BiomeBGC_core*
-
-
 
 [![made-with-Markdown](figures/markdownBadge.png)](https://commonmark.org)
 
-<!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
-
-#### Authors:
-
-Dominique Caron <dominique.caron@nrcan-rncan.gc.ca> [aut, cre]
-<!-- ideally separate authors with new lines, '\n' not working -->
-
 ## Module Overview
 
-### Module summary
+Biome-BGC is an ecophysiological model that simulates the carbon, nitrogen, and
+water cycles of a forest stand through time, driven by daily weather. This
+module runs Biome-BGC version 4.2 through the R package
+`PredictiveEcology/BiomeBGCR`, which wraps the underlying C model.
 
-Provide a brief summary of what the module does / how to use the module.
+The module simulates each spatial unit twice:
 
-Module documentation should be written so that others can use your module.
-This is a template for module documentation, and should be changed to reflect your module.
+- a **spinup** run, which cycles the available weather record repeatedly until
+  the simulated ecosystem's slow-changing carbon and nitrogen pools (e.g., soil
+  carbon) stop drifting and reach a steady state appropriate for the site's
+  climate and vegetation type, and
+- a **main simulation** run, which starts from that steady state and runs
+  forward over the calendar years of interest, producing the daily, monthly,
+  and annual outputs used downstream.
+
+Simulations are organized by **pixelGroup**: a pixelGroup is a group of pixels
+sharing the same simulation inputs (e.g., same climate, vegetation, and soil
+conditions), so that Biome-BGC only needs to be run once per group rather than
+once per pixel. The spinup and main `.ini` input objects (see below) are each
+named lists, one entry per pixelGroup, and these names are the pixelGroup
+identifiers used throughout the module's outputs.
 
 ### Module inputs and parameters
 
-Describe input data required by the module and how to obtain it (e.g., directly from online sources or supplied by other modules)
-If `sourceURL` is specified, `downloadData("BiomeBGC_core", "C:/Users/docaron/Documents/repos")` may be sufficient.
+The module's two required inputs, `bbgcSpinup.ini` and `bbgc.ini`, are parsed
+Biome-BGC initialization ("ini") objects — one per pixelGroup — as returned by
+`BiomeBGCR::iniRead()`. These describe, among other things, the ecophysiological
+constants, meteorological data, and site parameters for each pixelGroup's run.
+They are typically prepared by another module (e.g., `BiomeBGC_dataPrep`), but
+can also be assembled manually with `BiomeBGCR::iniRead()` provided the ini
+files' other referenced inputs (ecophysiological constants file, meteorological
+data, etc.) are available in the project folder pointed to by the
+`bbgcInputPath` parameter.
 
-Table \@ref(tab:moduleInputs-BiomeBGC-core) shows the full list of module inputs.
+Two further inputs, `pixelGroupParameters` and `pixelGroupMap`, are optional
+and used only for plotting: `pixelGroupMap` gives the spatial extent/
+resolution/projection used to turn per-pixelGroup results into a raster, and
+`pixelGroupParameters` (with `pixelGroup`, `dominantSpecies`, and
+`climatePolygon` columns) lets the trend plot facet or color by dominant
+species and climate polygon.
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
-<caption>(\#tab:moduleInputs-BiomeBGC-core)(\#tab:moduleInputs-BiomeBGC-core)List of (ref:BiomeBGC-core) input objects and their description.</caption>
- <thead>
-  <tr>
-   <th style="text-align:left;"> objectName </th>
-   <th style="text-align:left;"> objectClass </th>
-   <th style="text-align:left;"> desc </th>
-   <th style="text-align:left;"> sourceURL </th>
-  </tr>
- </thead>
-<tbody>
-  <tr>
-   <td style="text-align:left;"> bbgcSpinup.ini </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> Biome-BGC initialization files for the spinup. Path to the .ini files (one path per site/scenario). </td>
-   <td style="text-align:left;"> NA </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> bbgc.ini </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> Biome-BGC initialization files. Path to the .ini files (one path per site/scenario). </td>
-   <td style="text-align:left;"> NA </td>
-  </tr>
-</tbody>
-</table>
-
-Summary of user-visible parameters (Table \@ref(tab:moduleParams-BiomeBGC-core))
+Table \@ref(tab:moduleInputs-BiomeBGC-core) lists the module's inputs in full,
+and Table \@ref(tab:moduleParams-BiomeBGC-core) lists its parameters. Notable
+parameters include `bbgcPath` (the working directory used for the simulation's
+temporary input/output files), `parallel.cores` (number of pixelGroups to run
+concurrently), `saveYears` (which years to retain/write out), and
+`purgeBGCdirs` (whether to delete the temporary input/output folders once a run
+finishes).
 
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
-<caption>(\#tab:moduleParams-BiomeBGC-core)(\#tab:moduleParams-BiomeBGC-core)List of (ref:BiomeBGC-core) parameters and their description.</caption>
- <thead>
-  <tr>
-   <th style="text-align:left;"> paramName </th>
-   <th style="text-align:left;"> paramClass </th>
-   <th style="text-align:left;"> default </th>
-   <th style="text-align:left;"> min </th>
-   <th style="text-align:left;"> max </th>
-   <th style="text-align:left;"> paramDesc </th>
-  </tr>
- </thead>
-<tbody>
-  <tr>
-   <td style="text-align:left;"> argv </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> -a </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Arguments for the BiomeBGC library (same as 'bgc' commandline application) </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> bbgcPath </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> C:\Users.... </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Path to base directory to use for simulations. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> bbgcInputPath </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> C:\Users.... </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Path to the Biome-BGC input directory. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .plots </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> screen </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Used by Plots function, which can be optionally used here </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .plotInitialTime </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 0 </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Describes the simulation time at which the first plot event should occur. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .plotInterval </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Describes the simulation time interval between plot events. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .saveInitialTime </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Describes the simulation time at which the first save event should occur. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .saveInterval </td>
-   <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> This describes the simulation time interval between save events. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .studyAreaName </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()` </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .seed </td>
-   <td style="text-align:left;"> list </td>
-   <td style="text-align:left;">  </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Named list of seeds to use for each event (names). </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> .useCache </td>
-   <td style="text-align:left;"> logical </td>
-   <td style="text-align:left;"> FALSE </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Should caching of events or module be used? </td>
-  </tr>
-</tbody>
-</table>
+Table: (\#tab:moduleInputs-BiomeBGC-core)List of BiomeBGC_core input objects and their description.
+
+|objectName           |objectClass |desc                                                                                                                                               |sourceURL |
+|:--------------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
+|bbgcSpinup.ini       |list        |Biome-BGC initialization files for the spinup. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id |NA        |
+|bbgc.ini             |list        |Biome-BGC initialization files. Parsed ini object as returned by `BiomeBGCR::iniRead()`, one per pixelGroup, named by pixelGroup id                |NA        |
+|pixelGroupParameters |data.frame  |Optional. A table with pixelGroup, dominantSpecies and climatePolygon columns, used only by OutputTrendPlot() for plot faceting/coloring.          |NA        |
+|pixelGroupMap        |SpatRaster  |Optional. A raster defining the extent, resolution, projection of the study area. Only used for plotting purposes.                                 |NA        |
+
+
+Table: (\#tab:moduleParams-BiomeBGC-core)List of BiomeBGC_core parameters and their description.
+
+|paramName              |paramClass |default      |min |max |paramDesc                                                                                                                                                                                        |
+|:----------------------|:----------|:------------|:---|:---|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|argv                   |character  |-v3          |NA  |NA  |Arguments for the BiomeBGC library (same as 'bgc' commandline application).                                                                                                                      |
+|bbgcPath               |character  |C:\Users.... |NA  |NA  |Path to base directory to use for simulations.                                                                                                                                                   |
+|bbgcInputPath          |character  |C:\Users.... |NA  |NA  |Path to the Biome-BGC input directory.                                                                                                                                                           |
+|purgeBGCdirs           |logical    |TRUE         |NA  |NA  |If TRUE (default), delete the 'inputs' and 'outputs' subfolders underbbgcPath at the end of Init(). Set to FALSE to keep them for inspection(e.g., when using a custom, non-temporary bbgcPath). |
+|returnDailyEstimates   |logical    |TRUE         |NA  |NA  |Controls whether dailyOutput object is returned by the simulation.                                                                                                                               |
+|returnMonthlyEstimates |logical    |TRUE         |NA  |NA  |Controls whether monthlyAverages object is returned by the simulation.                                                                                                                           |
+|parallel.cores         |integer    |1            |1   |NA  |Number of cores used to execute the simulation                                                                                                                                                   |
+|saveYears              |numeric    |NA           |NA  |NA  |Controls the years for which the output variables are saved.                                                                                                                                     |
+|.plots                 |character  |screen       |NA  |NA  |Used by Plots function, which can be optionally used here                                                                                                                                        |
+|.plotInitialTime       |numeric    |0            |NA  |NA  |Describes the simulation time at which the first plot event should occur.                                                                                                                        |
+|.plotInterval          |numeric    |NA           |NA  |NA  |Describes the simulation time interval between plot events.                                                                                                                                      |
+|.saveInitialTime       |numeric    |NA           |NA  |NA  |Describes the simulation time at which the first save event should occur.                                                                                                                        |
+|.saveInterval          |numeric    |NA           |NA  |NA  |This describes the simulation time interval between save events.                                                                                                                                 |
+|.studyAreaName         |character  |NA           |NA  |NA  |Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()`                                                                       |
+|.seed                  |list       |             |NA  |NA  |Named list of seeds to use for each event (names).                                                                                                                                               |
+|.useCache              |logical    |FALSE        |NA  |NA  |Should caching of events or module be used?                                                                                                                                                      |
 
 ### Events
 
-Describe what happens for each event type.
+The module schedules three events:
+
+- **`init`** — runs `Init()`, which carries out the spinup and main simulation
+  for every pixelGroup (in parallel across pixelGroups when
+  `parallel.cores > 1`), and collects the daily, monthly, and annual results
+  into `sim$dailyOutput`, `sim$monthlyAverages`, and `sim$annualAverages`.
+  Plotting and saving events are then scheduled if requested (see below).
+- **`plot`** — scheduled at the end of the simulation if `P(sim)$.plots`
+  requests any plotting. Produces a time-trend plot of annual net primary
+  productivity (NPP) across pixelGroups, and NPP raster maps for the first and
+  last simulated years, all written to `BiomeBGC_figures` under the output
+  path.
+- **`save`** — scheduled at the end of the simulation if `saveYears` is set.
+  Writes `sim$dailyOutput`, `sim$monthlyAverages` (if requested via
+  `returnDailyEstimates`/`returnMonthlyEstimates`), and `sim$annualAverages`,
+  filtered to the requested `saveYears`, to `.qs` files under the output path.
 
 ### Plotting
 
-Write what is plotted.
+Plotting is controlled by the `.plots` parameter (passed to
+`SpaDES.core::Plots()`) together with `.plotInitialTime`/`.plotInterval`.
+When the `annualAverages` output includes a `daily_npp` column, the module
+produces an NPP trend plot across years (faceted/colored by dominant species
+and climate polygon when `pixelGroupParameters` is supplied) and two raster
+maps of landscape NPP (first and last simulated year), all saved as PNG files.
 
 ### Saving
 
-Write what is saved.
+Saving is controlled by the `saveYears` parameter together with
+`.saveInitialTime`/`.saveInterval`. When `saveYears` contains any non-`NA`
+year, the `save` event writes the daily, monthly, and annual outputs
+(restricted to those years) to `.qs` files via `qs2::qs_save()`. Whether daily
+and monthly estimates are written (and computed at all) is further controlled
+by `returnDailyEstimates` and `returnMonthlyEstimates`.
 
 ### Module outputs
 
-Description of the module outputs (Table \@ref(tab:moduleOutputs-BiomeBGC-core)).
+The module returns three `data.table` outputs, one row per pixelGroup and time
+step: `dailyOutput` (daily values), `monthlyAverages` (daily values averaged by
+month), and `annualAverages` (daily values averaged by year). Units for each
+output variable follow Biome-BGC's own output variable definitions (see
+[`bgc_struct.h`](https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h)
+in the `BiomeBGCR` source).
 
-<table class="table" style="color: black; margin-left: auto; margin-right: auto;">
-<caption>(\#tab:moduleOutputs-BiomeBGC-core)(\#tab:moduleOutputs-BiomeBGC-core)List of (ref:BiomeBGC-core) outputs and their description.</caption>
- <thead>
-  <tr>
-   <th style="text-align:left;"> objectName </th>
-   <th style="text-align:left;"> objectClass </th>
-   <th style="text-align:left;"> desc </th>
-  </tr>
- </thead>
-<tbody>
-  <tr>
-   <td style="text-align:left;"> outputControl </td>
-   <td style="text-align:left;"> data.frame </td>
-   <td style="text-align:left;"> NA </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> dailyOutput </td>
-   <td style="text-align:left;"> data.frame </td>
-   <td style="text-align:left;"> NA </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> annualOutput </td>
-   <td style="text-align:left;"> data.frame </td>
-   <td style="text-align:left;"> NA </td>
-  </tr>
-</tbody>
-</table>
+
+Table: (\#tab:moduleOutputs-BiomeBGC-core)List of BiomeBGC_core outputs and their description.
+
+|objectName      |objectClass |desc                                                                                                                                                                                                     |
+|:---------------|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|dailyOutput     |data.table  |The ouput variables for each pixelGroup and day. The units can be find here: https://raw.githubusercontent.com/PredictiveEcology/BiomeBGCR/refs/heads/development/src/Biome-BGC/src/include/bgc_struct.h |
+|monthlyAverages |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |
+|annualAverages  |data.table  |The daily output variables averaged for each month. The same units than the dailyOutput.                                                                                                                 |
 
 ### Links to other modules
 
-Describe any anticipated linkages to other modules, such as modules that supply input data or do post-hoc analysis.
+- `BiomeBGC_dataPrep` (upstream) — prepares the `bbgcSpinup.ini`/`bbgc.ini`
+  input objects (and optionally `pixelGroupParameters`/`pixelGroupMap`) that
+  this module consumes.
+- `BiomeBGC_validationFluxTower` (downstream) — validates this module's daily/
+  monthly/annual outputs against flux tower observations.
 
 ### Getting help
 
--   provide a way for people to obtain help (e.g., module repository issues page)
+- Please file an issue on the module's
+  [GitHub repository](https://github.com/PredictiveEcology/BiomeBGC_core/issues)
+  if you run into problems or have questions.
 
 ## References
 
-<!-- autogenerated from bibligraphy -->
+<!-- autogenerated from bibliography -->
+
+<!-- Drafted with assistance from Claude (Posit Assistant). -->
