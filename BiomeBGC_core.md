@@ -1,7 +1,7 @@
 ---
 title: "BiomeBGC_core Manual"
 subtitle: "v.0.0.0.9000"
-date: "Last updated: 2026-10-05"
+date: "Last updated: 2026-11-04"
 output:
   bookdown::html_document2:
     toc: true
@@ -86,24 +86,24 @@ Table: (\#tab:moduleInputs-BiomeBGC-core)List of BiomeBGC_core input objects and
 
 Table: (\#tab:moduleParams-BiomeBGC-core)List of BiomeBGC_core parameters and their description.
 
-|paramName              |paramClass |default      |min |max |paramDesc                                                                                                                                                                                        |
-|:----------------------|:----------|:------------|:---|:---|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|argv                   |character  |-v3          |NA  |NA  |Arguments for the BiomeBGC library (same as 'bgc' commandline application).                                                                                                                      |
-|bbgcPath               |character  |/tmp/Rtm.... |NA  |NA  |Path to base directory to use for simulations.                                                                                                                                                   |
-|bbgcInputPath          |character  |/tmp/Rtm.... |NA  |NA  |Path to the Biome-BGC input directory.                                                                                                                                                           |
-|purgeBGCdirs           |logical    |TRUE         |NA  |NA  |If TRUE (default), delete the 'inputs' and 'outputs' subfolders underbbgcPath at the end of Init(). Set to FALSE to keep them for inspection(e.g., when using a custom, non-temporary bbgcPath). |
-|returnDailyEstimates   |logical    |TRUE         |NA  |NA  |Controls whether dailyOutput object is returned by the simulation.                                                                                                                               |
-|returnMonthlyEstimates |logical    |TRUE         |NA  |NA  |Controls whether monthlyAverages object is returned by the simulation.                                                                                                                           |
-|parallel.cores         |integer    |1            |1   |NA  |Number of cores used to execute the simulation                                                                                                                                                   |
-|saveYears              |numeric    |NA           |NA  |NA  |Controls the years for which the output variables are saved.                                                                                                                                     |
-|.plots                 |character  |screen       |NA  |NA  |Used by Plots function, which can be optionally used here                                                                                                                                        |
-|.plotInitialTime       |numeric    |0            |NA  |NA  |Describes the simulation time at which the first plot event should occur.                                                                                                                        |
-|.plotInterval          |numeric    |NA           |NA  |NA  |Describes the simulation time interval between plot events.                                                                                                                                      |
-|.saveInitialTime       |numeric    |NA           |NA  |NA  |Describes the simulation time at which the first save event should occur.                                                                                                                        |
-|.saveInterval          |numeric    |NA           |NA  |NA  |This describes the simulation time interval between save events.                                                                                                                                 |
-|.studyAreaName         |character  |NA           |NA  |NA  |Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()`                                                                       |
-|.seed                  |list       |             |NA  |NA  |Named list of seeds to use for each event (names).                                                                                                                                               |
-|.useCache              |logical    |FALSE        |NA  |NA  |Should caching of events or module be used?                                                                                                                                                      |
+|paramName              |paramClass |default      |min |max |paramDesc                                                                                                                                                                                        |cacheKey |
+|:----------------------|:----------|:------------|:---|:---|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------|
+|argv                   |character  |-v3          |NA  |NA  |Arguments for the BiomeBGC library (same as 'bgc' commandline application).                                                                                                                      |TRUE     |
+|bbgcPath               |character  |/tmp/Rtm.... |NA  |NA  |Path to base directory to use for simulations.                                                                                                                                                   |TRUE     |
+|bbgcInputPath          |character  |/tmp/Rtm.... |NA  |NA  |Path to the Biome-BGC input directory.                                                                                                                                                           |TRUE     |
+|purgeBGCdirs           |logical    |TRUE         |NA  |NA  |If TRUE (default), delete the 'inputs' and 'outputs' subfolders underbbgcPath at the end of Init(). Set to FALSE to keep them for inspection(e.g., when using a custom, non-temporary bbgcPath). |TRUE     |
+|returnDailyEstimates   |logical    |TRUE         |NA  |NA  |Controls whether dailyOutput object is returned by the simulation.                                                                                                                               |TRUE     |
+|returnMonthlyEstimates |logical    |TRUE         |NA  |NA  |Controls whether monthlyAverages object is returned by the simulation.                                                                                                                           |TRUE     |
+|parallel.cores         |integer    |1            |1   |NA  |Number of cores used to execute the simulation                                                                                                                                                   |TRUE     |
+|saveYears              |numeric    |NA           |NA  |NA  |Controls the years for which the output variables are saved.                                                                                                                                     |TRUE     |
+|.plots                 |character  |screen       |NA  |NA  |Used by Plots function, which can be optionally used here                                                                                                                                        |TRUE     |
+|.plotInitialTime       |numeric    |0            |NA  |NA  |Describes the simulation time at which the first plot event should occur.                                                                                                                        |TRUE     |
+|.plotInterval          |numeric    |NA           |NA  |NA  |Describes the simulation time interval between plot events.                                                                                                                                      |TRUE     |
+|.saveInitialTime       |numeric    |NA           |NA  |NA  |Describes the simulation time at which the first save event should occur.                                                                                                                        |TRUE     |
+|.saveInterval          |numeric    |NA           |NA  |NA  |This describes the simulation time interval between save events.                                                                                                                                 |TRUE     |
+|.studyAreaName         |character  |NA           |NA  |NA  |Human-readable name for the study area used - e.g., a hash of the studyarea obtained using `reproducible::studyAreaName()`                                                                       |TRUE     |
+|.seed                  |list       |             |NA  |NA  |Named list of seeds to use for each event (names).                                                                                                                                               |TRUE     |
+|.useCache              |logical    |FALSE        |NA  |NA  |Should caching of events or module be used?                                                                                                                                                      |TRUE     |
 
 ### Events
 
