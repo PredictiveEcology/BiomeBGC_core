@@ -9,8 +9,8 @@ defineModule(sim, list(
   description = "Runs Biome-BGC.",
   keywords = "",
   authors = c(
-    person("Dominique", "Caron", email = "dominique.caron@nrcan-rncan.gc.ca", role = c("aut", "cre")),
-    person("Céline", "Boisvenue", email = "celine.boisvenue@nrcan-rncan.gc.ca", role = "ctb")
+    person("Céline", "Boisvenue", email = "celine.boisvenue@nrcan-rncan.gc.ca", role = c("cre", "ctb")),
+    person("Dominique", "Caron", email = "dominique.caron@nrcan-rncan.gc.ca", role = c("aut"))
   ),
   childModules = character(0),
   version = list(BiomeBGC_core = "0.0.0.9000"),
@@ -119,20 +119,20 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
     init = {
       ### check for more detailed object dependencies:
       ### (use `checkObject` or similar)
-      
+
       # do stuff for this event
       sim <- Init(sim)
-      
+
       # schedule plotting
       if (anyPlotting(P(sim)$.plots)) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "plot", eventPriority = 12)
-      
+
       # schedule saving
       if (any(!is.na(P(sim)$saveYears))) sim <- scheduleEvent(sim, end(sim), "BiomeBGC_core", "save", eventPriority = 12)
-      
+
     },
     plot = {
       figPath <- file.path(outputPath(sim), "BiomeBGC_figures")
-      
+
       if("daily_npp" %in% names(sim$annualAverages)){
         NPPtrend <- OutputTrendPlot(sim, "daily_npp", annualSum = TRUE, ylab = "NPP (gC/m2/yr)")
         SpaDES.core::Plots(NPPtrend,
@@ -140,7 +140,7 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
                            path = figPath,
                            ggsaveArgs = list(width = 10, height = 7, units = "in", dpi = 300),
                            types = "png")
-        
+
         NPPstart <- OutputRaster(sim, start(sim), "daily_npp", annualSum = TRUE)
         LandscapeAvg <- round(mean(values(NPPstart, na.rm = TRUE)), 2)
         SpaDES.core::Plots(NPPstart,
@@ -150,7 +150,7 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
                            path = figPath,
                            deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
                            types = "png")
-        
+
         NPPend <- OutputRaster(sim, end(sim), "daily_npp", annualSum = TRUE)
         LandscapeAvg <- round(mean(values(NPPend, na.rm = TRUE)), 2)
         SpaDES.core::Plots(NPPend,
@@ -160,28 +160,28 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
                            deviceArgs = list(width = 7, height = 7, units = "in", res = 300),
                            types = "png")
       }
-      
+
     },
     save = {
-      
+
       if(!is.null(sim$annualAverages)){
         outPath <- outputPath(sim)
-        
+
         if(P(sim)$returnDailyEstimates){
           qs_save(sim$dailyOutput[year %in% P(sim)$saveYears],
                   file.path(outPath, "dailyEstimates.qs"))
         }
-        
+
         if(P(sim)$returnMonthlyEstimates){
           qs_save(sim$monthlyAverages[year %in% P(sim)$saveYears],
                   file.path(outPath, "monthlyAverages.qs"))
         }
-        
+
         qs_save(sim$annualAverages[year %in% P(sim)$saveYears],
                 file.path(outPath, "annualAverages.qs"))
-        
+
       }
-      
+
     },
     warning(noEventWarning(sim))
   )
@@ -190,19 +190,19 @@ doEvent.BiomeBGC_core = function(sim, eventTime, eventType) {
 
 ### template initialization
 Init <- function(sim) {
-  
+
   # If there are no ini files, skip all events and throw a warning
   if (length(sim$bbgc.ini) == 0) {
     message("There are no sites to simulate. All BiomeBGC_core events are skipped.")
     return(invisible(sim))
   }
-  
+
   ## Arguments for the BiomeBGC library
   argv <- P(sim)$argv
-  
+
   ## Set the simulation directory
   bbgcPath <- P(sim)$bbgcPath
-  
+
   ## Change the ini files if parameters returnDailyEstimates or returnMonthlyEstimates are set to false
   sim$bbgc.ini <- lapply(sim$bbgc.ini, function(ini){
     iniSet(ini, "OUTPUT_CONTROL", 2:3,
@@ -211,9 +211,9 @@ Init <- function(sim) {
            )
     )
   })
-  
+
   createBGCdirs(sim)
-  
+
   # pixelGroup identity comes from the names of the ini lists themselves.
   # Assert they agree before relying on them.
   if (is.null(names(sim$bbgcSpinup.ini)) || is.null(names(sim$bbgc.ini)) ||
@@ -242,7 +242,7 @@ Init <- function(sim) {
                         "inputs" ,
                         "ini",
                         paste0(names(sim$bbgc.ini), ".ini"))
-  
+
   # determine the number of cores to use
   n_pixelGroups <- length(iniPaths)
   n_cores <- min(P(sim)$parallel.cores, parallelly::availableCores() - 1, n_pixelGroups)
@@ -256,7 +256,7 @@ Init <- function(sim) {
     readDaily <-  P(sim)$returnDailyEstimates
     readMonthly <- P(sim)$returnMonthlyEstimates
     # run_parallel_sims() pass the worker functions explicitly so that it can, in
-    # turn, pass them to future_lapply() as a *named list* of future.globals. 
+    # turn, pass them to future_lapply() as a *named list* of future.globals.
     res <- run_parallel_sims(
       spinup_chunks = spinup_chunks,
       argv = argv,
@@ -281,12 +281,12 @@ Init <- function(sim) {
       sim$monthlyAverages <- rbindlist(lapply(res, function(x)
         rbindlist(lapply(x, `[[`, "monthly"))))
       setorder(sim$monthlyAverages, pixelGroup, year, month)
-      
+
     }
     sim$annualAverages <- rbindlist(lapply(res, function(x)
       rbindlist(lapply(x, `[[`, "annual"))))
     setorder(sim$annualAverages, pixelGroup, year)
-    
+
   } else {
     pixelGroupNames <- as.numeric(names(sim$bbgc.ini))
     res <- lapply(seq_along(iniPaths), function(i) {
@@ -313,13 +313,13 @@ Init <- function(sim) {
     }
     sim$annualAverages <- rbindlist(lapply(res, `[[`, "annual"))
     setorder(sim$annualAverages, pixelGroup, year)
-    
+
   }
-  
+
   if (P(sim)$purgeBGCdirs) {
     purgeBGCdirs(bbgcPath)
   }
-  
+
   return(invisible(sim))
 }
 
@@ -327,22 +327,22 @@ createBGCdirs <- function(sim) {
   bbgcPath <- params(sim)$BiomeBGC_core$bbgcPath
   # Get all input files
   inputFiles <- extractInputFiles(c(sim$bbgcSpinup.ini, sim$bbgc.ini))
-  
+
   # Create the folder structure
   vapply(unique(dirname(inputFiles)), function(d) {
     dir.create(file.path(bbgcPath, "inputs", d), recursive = TRUE, showWarnings = FALSE)
-    
+
   }, logical(1))
   dir.create(file.path(bbgcPath, "outputs"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bbgcPath, "inputs", "restart"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(bbgcPath, "inputs", "ini"), recursive = TRUE, showWarnings = FALSE)
-  
+
   # Copy input files to simulation directory
   vapply(unique(inputFiles), function(d) {
     file.copy(from = file.path(params(sim)$BiomeBGC_core$bbgcInputPath, d),
               to = file.path(bbgcPath, "inputs", d), overwrite = TRUE)
   }, logical(1))
-  
+
   # Copy ini files into input directory
   nPixelGroups <- length(sim$bbgc.ini)
   lapply(seq_len(nPixelGroups), function(pixelGroup_i){
@@ -379,21 +379,21 @@ extractInputFiles <- function(inis){
 readDailyOutput <- function(res){
   # file
   dailyOutputFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".dayout")
-  
+
   # get the number of entries in binFile
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
   nbDays <- nbYears * 365
   nbOutputs <- as.integer(iniGet(res, "DAILY_OUTPUT", 1))
   entries <- nbDays * nbOutputs
-  
+
   # read the bin daily output file
   outputMatrix <- readBin(dailyOutputFile, double(), entries, size = 4)
   outputMatrix <- matrix(outputMatrix, nrow = nbDays, ncol = nbOutputs, byrow = TRUE)
-  
+
   # assign column names
   colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
   colnames(outputMatrix) <- colNames
-  
+
   # add year and julian date
   firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
   dailyOutput <- data.frame(
@@ -408,21 +408,21 @@ readDailyOutput <- function(res){
 readMonthlyAverages <- function(res){
   # file
   monAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".monavgout")
-  
+
   # get the number of entries in binFile
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
   nbMonths <- nbYears * 12
   nbOutputs <- as.integer(iniGet(res, "DAILY_OUTPUT", 1))
   entries <- nbMonths * nbOutputs
-  
+
   # read the bin daily output file
   outputMatrix <- readBin(monAvgFile, double(), entries, size = 4)
   outputMatrix <- matrix(outputMatrix, nrow = nbMonths, ncol = nbOutputs, byrow = TRUE)
-  
+
   # assign column names
   colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
   colnames(outputMatrix) <- colNames
-  
+
   # add year and julian date
   firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
@@ -437,20 +437,20 @@ readMonthlyAverages <- function(res){
 readAnnualAverages <- function(res){
   # file
   annAvgFile <- paste0(iniGet(res, "OUTPUT_CONTROL", 1), ".annavgout")
-  
+
   # get the number of entries in binFile
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
   nbOutputs <- as.integer(iniGet(res, "DAILY_OUTPUT", 1))
   entries <- nbYears * nbOutputs
-  
+
   # read the bin daily output file
   outputMatrix <- readBin(annAvgFile, double(), entries, size = 4)
   outputMatrix <- matrix(outputMatrix, nrow = nbYears, ncol = nbOutputs, byrow = TRUE)
-  
+
   # assign column names
   colNames <- res$DAILY_OUTPUT$comment[-c(1,2)]
   colnames(outputMatrix) <- colNames
-  
+
   # add year and julian date
   firstyear <- as.integer(iniGet(res, "TIME_DEFINE", 3))
   nbYears <- as.integer(iniGet(res, "TIME_DEFINE", 2))
@@ -482,29 +482,29 @@ checkIniStructure <- function(iniList, objName, requiredSections) {
 }
 
 OutputRaster <- function(sim, yearToPlot, outputVar, annualSum){
-  
+
   # filter the datatable to keep just the relevant year and variable
   dt <- sim$annualAverages[year == yearToPlot, .SD, .SDcols = c("pixelGroup", outputVar)]
-  
+
   # expand the datable by converting the pixelGroup to pixels
   r <- sim$pixelGroupMap
-  
+
   r <- classify(r,
                 rcl = data.frame(is = dt$pixelGroup, becomes = dt[,get(outputVar)]))
-  
+
   # if primary productivity transform units to gC/m2/yr
   if (outputVar %in% c("daily_npp", "daily_nep", "daily_nee", "daily_gpp"))
     r <- r * 1000
-  
+
   # apply the annual sum
   if(annualSum) r <- r * 365
-  
+
   return(r)
 }
 
 OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
   hasPixelGroupParameters <- !is.null(sim$pixelGroupParameters)
-  
+
   # get the variables of interest and, if available, the dominant species/climate polygon
   if (hasPixelGroupParameters) {
     dt <- merge.data.table(sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)],
@@ -512,26 +512,26 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
   } else {
     dt <- sim$annualAverages[, .SD, .SDcols = c("pixelGroup", "year", outputVar)]
   }
-  
+
   # expand the data table by converting pixelGroup to pixels
   forestedPixelGroups <- data.table(
     pixelGroup = values(sim$pixelGroupMap, na.rm=TRUE, mat = FALSE)
   )
   forestedPixelGroups[, pixId := .I]
-  
+
   dt <- merge.data.table(forestedPixelGroups, dt, allow.cartesian = TRUE)
-  
+
   # apply the annual sum
   if(annualSum) dt[, (outputVar) := get(outputVar) * 365 ]
-  
+
   # if primary productivity transform units to gC/m2/yr
   if (outputVar %in% c("daily_npp", "daily_nep", "daily_nee", "daily_gpp"))
     dt[, (outputVar) := get(outputVar) * 1000 ]
-  
+
   # calculate the across-pixel annual mean with 95% interval
   groupingCols <- if (hasPixelGroupParameters) c("year", "dominantSpecies", "climatePolygon") else "year"
   dt <- dt[ ,.(annMean = mean(get(outputVar)), annLower95perc = quantile(get(outputVar), 0), annUpper95perc = quantile(get(outputVar), 1)), by = groupingCols]
-  
+
   # make the plot
   if (hasPixelGroupParameters) {
     p <- ggplot(dt) +
@@ -547,28 +547,28 @@ OutputTrendPlot <- function(sim, outputVar, annualSum = FALSE, ylab){
       labs(x = "Year", y = ylab) +
       theme_bw()
   }
-  
+
   return(p)
 }
 
 .inputObjects <- function(sim) {
-  
+
   #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
-  
+
   # Biome-BGC ini file for spinup
   if (!suppliedElsewhere('bbgcSpinup.ini', sim)) {
-    
+
     stop("Biome-BGC spinup initialization file (bbgcSpinup.ini) must be provided.")
-    
+
   }
-  
+
   # Biome-BGC ini file for main simulation
   if (!suppliedElsewhere('bbgc.ini', sim)) {
-    
+
     stop("Biome-BGC initialization file (bbgc.ini) must be provided.")
-    
+
   }
 
   return(invisible(sim))
