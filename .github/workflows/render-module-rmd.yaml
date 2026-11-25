@@ -36,3 +36,5 @@ jobs:
     uses: PredictiveEcology/actions/.github/workflows/render-module-rmd.yaml@main
     with:
       module: BiomeBGC_core
+    secrets:
+      DOCS_BOT_KEY: ${{ secrets.DOCS_BOT_KEY }}
