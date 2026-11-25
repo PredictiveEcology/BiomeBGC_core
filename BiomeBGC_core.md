@@ -1,7 +1,7 @@
 ---
 title: "BiomeBGC_core Manual"
 subtitle: "v.0.0.0.9000"
-date: "Last updated: 2026-11-05"
+date: "Last updated: 2026-11-25"
 output:
   bookdown::html_document2:
     toc: true
